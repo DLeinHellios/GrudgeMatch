@@ -12,21 +12,41 @@ def print_help():
 #    print("MATCH - Initiate a match between two fighters")
     print("ADD - Add a new fighter or game")
     print("REMOVE - Remove a fighter or game")
+    print("LIST - Lists fighters by number of matches")
     print("RANK - Ranks fighters by their records")
-    print("GAMES - Ranks games by number of matches on record")
+    print("GAMES - Lists games by number of matches on record")
 #    print("GIFT - Add money to a fighter's account balance")
     print("QUIT - Exit GrudgeMatch")
     print("========================================")
 
 
 #----- Data -----
-def sort_data(data):
-    '''Accepts data dictionary, returns sorted by w/l record'''
-    pass
+def sort_fighters(rank, fighters):
+    '''Accepts and returns fighters sorted by either rank or number of matches'''
+    if rank: # Sort by w/l
+        fighters = {k: v for k, v in sorted(fighters.items(), key=lambda item: item[1]["wins"]/item[1]["matches"] if item[1]["matches"] else 0, reverse = True)}
+
+    else: # Sort by # of matches
+        fighters = {k: v for k, v in sorted(fighters.items(), key=lambda item: item[1]["matches"], reverse = True)}
+
+    return fighters
 
 
-def write_data(backup, data):
+def sort_games(games):
+    '''Accepts and returns games sorted by number of matches'''
+    games = {k: v for k, v in sorted(games.items(), key=lambda item: item[1], reverse = True)}
+
+    return games
+
+
+def write_data(backup):
     '''Writes data to JSON file and backup file'''
+    global fighters, games
+
+    fighters = sort_fighters(False, fighters)
+    games = sort_games(games)
+    data = {"fighters":fighters, "games":games}
+
     if not backup:
         with open('data.json', 'w', encoding='utf-8') as dataFile:
             json.dump(data, dataFile, ensure_ascii=False, indent=4)
@@ -46,11 +66,11 @@ def load_data():
         try:
             with open('.data.json.backup') as dataFile:
                 data = json.load(dataFile)
-                write_data(False, data)
+                write_data(False)
 
         except:
             data = {"fighters":{}, "games":{}}
-            write_data(False, data)
+            write_data(False)
 
     return data["fighters"], data["games"]
 
@@ -76,12 +96,11 @@ def add_fighter():
         print("Add new fighter " + name + "?")
         if confirm():
             fighters[name] = {
-            "balance": 0,
             "wins": 0,
-            "losses": 0,
-            "matches": 0}
+            "matches": 0,
+            "balance": 0}
 
-            write_data(False, {"fighters":fighters, "games":games})
+            write_data(False)
             print("Fighter " + name + " has entered the game")
 
         print("========================================")
@@ -104,7 +123,7 @@ def add_game():
         if confirm():
             games[name] = 0
 
-            write_data(False, {"fighters":fighters, "games":games})
+            write_data(False)
             print(name + " has been added to games")
 
         print("========================================")
@@ -143,7 +162,7 @@ def remove_fighter():
         print("Remove fighter " + name + "?")
         if confirm():
             del fighters[name]
-            write_data(False, {"fighters":fighters, "games":games})
+            write_data(False)
             print(name + " has been stricken from the records")
 
         print("========================================")
@@ -163,7 +182,7 @@ def remove_game():
         print("Remove game " + name + "?")
         if confirm():
             del games[name]
-            write_data(False, {"fighters":fighters, "games":games})
+            write_data(False)
             print(name + " has been stricken from the records")
 
         print("========================================")
@@ -190,20 +209,41 @@ def remove_menu():
         print("========================================")
 
 
-def rank_fighters():
-    '''List all fighters by their records'''
-    for key in fighters:
-        print(key)
+def list_fighters():
+    '''List all fighters by thenumber of matches played'''
+    labels = ["Name", "Wins", "Matches", "Balance"]
+    head = ["----", "----", "-------", "-------"]
+    print(" {: <10} {: <5} {: <8} {: <8}".format(*labels))
+    print(" {: <10} {: <5} {: <8} {: <8}".format(*head))
+    for f, stats in fighters.items():
+        print(" {: <10} {: <5} {: <8} ${: <8}".format(f, *stats.values()))
     print("========================================")
-        # TODO - print stats, formatted
+
+
+def rank_fighters():
+    '''List all fighters by their w/l records'''
+    global fighters
+    ranks = sort_fighters(True, fighters)
+
+    labels = ["Name", "Wins", "Matches", "Balance"]
+    head = ["----", "----", "-------", "-------"]
+    print(" {: <10} {: <5} {: <8} {: <8}".format(*labels))
+    print(" {: <10} {: <5} {: <8} {: <8}".format(*head))
+    for f, stats in ranks.items():
+        print(" {: <10} {: <5} {: <8} ${: <8}".format(f, *stats.values()))
+    print("========================================")
 
 
 def rank_games():
     '''Lists all games by matches on record'''
-    for key in games:
-        print(key)
     print("========================================")
-        # TODO - print plays, formatted
+    labels = ["Name", "Matches"]
+    head = ["----", "-------"]
+    print(" {: <18} {: <5}".format(*labels))
+    print(" {: <18} {: <5}".format(*head))
+    for g, matches in games.items():
+        print(" {: <18} {: <5}".format(g, matches))
+    print("========================================")
 
 
 #----- Commands -----
@@ -228,11 +268,19 @@ def cmd_parse(cmd):
     elif cmd[0].lower() in ["remove", "rm"]:
         remove_menu()
 
-    elif cmd[0].lower() in ["rank", "list", "ls"]:
+    elif cmd[0].lower() in ["list", "ls"]:
+        list_fighters()
+
+    elif cmd[0].lower() in ["rank", "ranks"]:
         rank_fighters()
 
     elif cmd[0].lower() in ["game", "games"]:
         rank_games()
+
+    elif cmd[0].lower() in ["save", "s"]:
+        write_data(False)
+        print("Data has been saved")
+        print("========================================")
 
     else:
         print("Invalid command! Type HELP for a list of commands")
@@ -243,7 +291,7 @@ def cmd_parse(cmd):
 def setup():
     global fighters, games # Global data objects
     fighters, games = load_data()
-    write_data(True, {"fighters":fighters, "games":games}) # Save backup
+    write_data(True) # Save backup
     print("GrudgeMatch - Lets get down to business!")
 
 

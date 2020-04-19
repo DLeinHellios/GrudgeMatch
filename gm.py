@@ -8,15 +8,15 @@ import sys, json
 def print_help():
     '''Prints command list'''
     print("============= COMMAND LIST =============")
-    print("HELP - Print command information")
-#    print("MATCH - Initiate a match between two fighters")
-    print("ADD - Add a new fighter or game")
-    print("REMOVE - Remove a fighter or game")
-    print("LIST - Lists fighters by number of matches")
-    print("RANK - Ranks fighters by their records")
-    print("GAMES - Lists games by number of matches on record")
-#    print("GIFT - Add money to a fighter's account balance")
-    print("QUIT - Exit GrudgeMatch")
+    print(" HELP - Print command information")
+#    print(" MATCH - Initiate a match between two fighters")
+    print(" ADD - Add a new fighter or game")
+    print(" REMOVE - Remove a fighter or game")
+    print(" LIST - Lists fighters by number of matches")
+    print(" RANK - Ranks fighters by their records")
+    print(" GAMES - Lists games by number of matches on record")
+#    print(" DEPOSIT - Add money to a fighter's account balance")
+    print(" QUIT - Exit GrudgeMatch")
     print("========================================")
 
 
@@ -56,7 +56,7 @@ def write_data(backup):
             json.dump(data, dataFile, ensure_ascii=False, indent=4)
 
 
-def load_data():
+def read_data():
     '''Loads data from data.json or backup, creates blank data.json if missing'''
     try:
         with open('data.json') as dataFile:
@@ -84,6 +84,42 @@ def confirm():
         confirmed = True
 
     return confirmed
+
+
+def select_fighter():
+    '''Displays menu for selecting fighters from list, accepts input and returns selection'''
+    fighterList = []
+    selection = None
+    c = 1
+
+    for f, matches in fighters.items():
+        print(" " + str(c) + ") " + f)
+        fighterList.append(f)
+        c += 1
+
+    choice = input("> ")
+    if choice.isdigit() and int(choice) <= len(fighterList):
+        selection = fighterList[int(choice) - 1]
+
+    return selection
+
+
+def select_game():
+    '''Displays menu for selecting games from list, accepts input and returns selection'''
+    gameList = []
+    selection = None
+    c = 1
+
+    for g, matches in games.items():
+        print(" " + str(c) + ") " + g)
+        gameList.append(g)
+        c += 1
+
+    choice = input("> ")
+    if choice.isdigit() and int(choice) <= len(gameList):
+        selection = gameList[int(choice) - 1]
+
+    return selection
 
 
 def add_fighter():
@@ -143,9 +179,9 @@ def add_menu():
     choice = input("> ")
     print("========================================")
 
-    if choice == "1":
+    if choice.lower() in ["1", "fighter", "fighters"]:
         add_fighter()
-    elif choice == "2":
+    elif choice.lower() in ["2", "game", "games"]:
         add_game()
     else:
         print("Invalid Option - returning to main menu")
@@ -155,7 +191,7 @@ def add_menu():
 def remove_fighter():
     '''Remove a single fighter from the roster'''
     print("Remove a fighter")
-    name = input("Fighter Name: ")
+    name = select_fighter()
 
     if name in fighters.keys():
         print("========================================")
@@ -175,7 +211,7 @@ def remove_fighter():
 def remove_game():
     '''Removes a single game from the game list'''
     print("Remove a game")
-    name = input("Game Name: ")
+    name = select_game()
 
     if name in games.keys():
         print("========================================")
@@ -200,9 +236,9 @@ def remove_menu():
     choice = input("> ")
     print("========================================")
 
-    if choice == "1":
+    if choice.lower() in ["1", "fighter", "fighters"]:
         remove_fighter()
-    elif choice == "2":
+    elif choice.lower() in ["2", "game", "games"]:
         remove_game()
     else:
         print("Invalid Option - returning to main menu")
@@ -290,7 +326,7 @@ def cmd_parse(cmd):
 #----------------------
 def setup():
     global fighters, games # Global data objects
-    fighters, games = load_data()
+    fighters, games = read_data()
     write_data(True) # Save backup
     print("GrudgeMatch - Lets get down to business!")
 

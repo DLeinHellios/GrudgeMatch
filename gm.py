@@ -4,7 +4,276 @@
 import sys, json
 
 
-#----- Information -----
+class Fighters():
+    def __init__(self, data):
+        '''Manages fighter data'''
+        self.data = data
+
+
+    def sort(self, rank):
+        '''Returns fighters.data sorted by rank or n matches'''
+        if rank: # Sort by w/l ratio
+            fighters = {k: v for k, v in sorted(self.data.items(), key=lambda item: item[1]["wins"]/item[1]["matches"] if item[1]["matches"] else 0, reverse = True)}
+
+        else: # Sort by number of matches
+            fighters = {k: v for k, v in sorted(self.data.items(), key=lambda item: item[1]["matches"], reverse = True)}
+
+        return fighters
+
+
+    def select(self, exclude):
+        '''Displays menu for selecting fighters from list, accepts input and returns selection as str'''
+        sortedFighters = self.sort(False)
+        fighterList = []
+        selection = None
+        c = 1
+
+        for f, matches in sortedFighters.items():
+            if f != exclude:
+                print(" " + str(c) + ") " + f)
+                fighterList.append(f)
+                c += 1
+
+        choice = input("> ")
+        if choice.isdigit() and int(choice) <= len(fighterList):
+            selection = fighterList[int(choice) - 1]
+
+        return selection
+
+
+    def add(self):
+        '''Creates a new fighter record'''
+        print("A New Fighter Approaches!")
+        name = input("Fighter Name: ")
+        #TODO - enforce max name length of 14 chars
+
+        if name not in self.data.keys() and name != '':
+            print("========================================")
+            print("Add new fighter " + name + "?")
+            if confirm():
+                self.data[name] = {
+                    "wins": 0,
+                    "matches": 0,
+                    "balance": 0}
+                print("Fighter " + name + " has entered the game")
+                print("========================================")
+
+        else:
+            print("Sorry, that name is unavailable, enter another?")
+            if confirm():
+                print("========================================")
+                self.add()
+
+
+    def remove(self):
+        '''Delete a single fighter record'''
+        print("Remove a fighter")
+        name = self.select(None)
+
+        if name in self.data.keys():
+            print("========================================")
+            print("Remove fighter " + name + "?")
+            if confirm():
+                del self.data[name]
+                print(name + " has been stricken from the records")
+
+            print("========================================")
+
+        else:
+            print("Invalid Fighter - returning to main menu")
+            print("========================================")
+
+
+    def list(self, rank):
+        '''Prints list of fighters sorted by rank or n matches'''
+        ranks = self.sort(rank)
+        print("========================================")
+        labels = ["Name", "Wins", "Matches", "Balance"]
+        head = ["----", "----", "-------", "-------"]
+        print(" {: <15} {: <5} {: <8} {: <8}".format(*labels))
+        print(" {: <15} {: <5} {: <8} {: <8}".format(*head))
+        for f, stats in ranks.items():
+            print(" {: <15} {: <5} {: <8} ${: <8}".format(f, *stats.values()))
+        print("========================================")
+
+
+
+class Games():
+    def __init__(self, data):
+        '''Manages game data'''
+        self.data = data
+
+
+    def sort(self, rank):
+        '''Returns game data sorted by matches played'''
+        if rank: # Sort by number of matches
+            games = {k: v for k, v in sorted(self.data.items(), key=lambda item: item[1], reverse = True)}
+
+        else:
+            games = {k: v for k, v in sorted(self.data.items(), key=lambda item: item[0])}
+
+        return games
+
+
+    def select(self):
+        '''Displays menu for selecting games from list, accepts input and returns selection as str'''
+        sortedGames = self.sort(True)
+        gameList = []
+        selection = None
+        c = 1
+
+        for g, matches in sortedGames.items():
+            print(" " + str(c) + ") " + g)
+            gameList.append(g)
+            c += 1
+
+        choice = input("> ")
+        if choice.isdigit() and int(choice) <= len(gameList):
+            selection = gameList[int(choice) - 1]
+
+        return selection
+
+
+    def add(self):
+        '''Adds a new game to the game list'''
+        print("A New Challenge Draws Near!")
+        name = input("Game Name: ")
+        #TODO - enforce max name length of 30 chars
+
+        if name not in self.data.keys() and name != '':
+            print("========================================")
+            print("Add new game " + name + "?")
+            if confirm():
+                self.data[name] = 0
+                print(name + " has been added to games")
+                print("========================================")
+
+        else:
+            print("Sorry, that name is unavailable, enter another?")
+            if confirm():
+                print("========================================")
+                self.add()
+
+
+    def remove(self):
+        '''Removes a single game from the game list'''
+        print("Remove a game")
+        name = self.select()
+
+        if name in self.data.keys():
+            print("========================================")
+            print("Remove game " + name + "?")
+            if confirm():
+                del self.data[name]
+                print(name + " has been stricken from the records")
+
+            print("========================================")
+
+        else:
+            print("Invalid Game - returning to main menu")
+            print("========================================")
+
+
+    def list(self, rank):
+        '''Lists all games by matches on record'''
+        ranks = self.sort(rank)
+        print("========================================")
+        labels = ["Name", "Matches"]
+        head = ["----", "-------"]
+        print(" {: <31} {: <5}".format(*labels))
+        print(" {: <31} {: <5}".format(*head))
+        for g, matches in ranks.items():
+            print(" {: <31} {: <5}".format(g, matches))
+        print("========================================")
+
+
+
+class Parser:
+    def command(self):
+        '''Collect command input to pass to parser'''
+        cmd = input("> ")
+        cmd = cmd.split(" ")
+        return cmd
+
+
+    def parse(self, fighters, games, cmd):
+        '''Parses list of commands and executes features'''
+        if cmd[0].lower() in ["exit","quit","q"]:
+            sys.exit()
+
+        elif cmd[0].lower() in ["help","h","?",""]:
+            print_help()
+
+        #elif cmd[0].lower() in ["match", "fight", "challenge"]:
+        #    start_match()
+
+        elif cmd[0].lower() in ["add", "new"]:
+            if len(cmd) < 2:
+                add_menu(fighters, games)
+            else:
+                if cmd[1].lower() in ["game", "games"]:
+                    print("========================================")
+                    games.add()
+                    write_data(fighters, games, False)
+                elif cmd[1].lower() in ["fighter", "fighters"]:
+                    print("========================================")
+                    fighters.add()
+                    write_data(fighters, games, False)
+                else:
+                    print("Invalid Option - returning to main menu")
+                    print("========================================")
+
+        elif cmd[0].lower() in ["remove", "rm"]:
+            if len(cmd) < 2:
+                remove_menu(fighters, games)
+            else:
+                if cmd[1].lower() in ["game", "games"]:
+                    games.remove()
+                    write_data(fighters, games, False)
+                elif cmd[1].lower() in ["fighter", "fighters"]:
+                    fighters.remove()
+                    write_data(fighters, games, False)
+                else:
+                    print("Invalid Option - returning to main menu")
+                    print("========================================")
+
+        elif cmd[0].lower() in ["list", "ls"]:
+            if len(cmd) < 2:
+                list_menu(fighters, games)
+            else:
+                if cmd[1].lower() in ["game", "games"]:
+                    games.list(False)
+                elif cmd[1].lower() in ["fighter", "fighters"]:
+                    fighters.list(False)
+                else:
+                    print("Invalid Option - returning to main menu")
+                    print("========================================")
+
+        elif cmd[0].lower() in ["rank", "ranks"]:
+            if len(cmd) < 2:
+                rank_menu(fighters, games)
+            else:
+                if cmd[1].lower() in ["game", "games"]:
+                    games.list(True)
+                elif cmd[1].lower() in ["fighter", "fighters"]:
+                    fighters.list(True)
+                else:
+                    print("Invalid Option - returning to main menu")
+                    print("========================================")
+
+
+        elif cmd[0].lower() in ["save", "s"]:
+            write_data(fighters, games, False)
+            print("Data has been saved")
+            print("========================================")
+
+        else:
+            print("Invalid Command! Type HELP for a list of commands")
+            print("========================================")
+
+
+
+#----- Menus -----
 def print_help():
     '''Prints command list'''
     print("============= COMMAND LIST =============")
@@ -12,40 +281,96 @@ def print_help():
 #    print(" MATCH - Initiate a match between two fighters")
     print(" ADD - Add a new fighter or game")
     print(" REMOVE - Remove a fighter or game")
-    print(" LIST - Lists fighters by number of matches")
-    print(" RANK - Ranks fighters by their records")
-    print(" GAMES - Lists games by number of matches on record")
+    print(" LIST - Lists fighters by matches, or games by name")
+    print(" RANK - Ranks fighters by records, or games by matches")
 #    print(" DEPOSIT - Add money to a fighter's account balance")
+#    print(" WITHDRAW - Remove money from a fighter's account balance")
     print(" QUIT - Exit GrudgeMatch")
     print("========================================")
 
 
+def confirm():
+    '''Prompts users to confirm an action, returns bool'''
+    choice = input("Please confirm <y/n>: ")
+    confirmed = False
+    if choice[0].lower() == "y":
+        confirmed = True
+
+    return confirmed
+
+
+def add_menu(fighters, games):
+    '''Menu to control add method flow if not specified as argument to parser'''
+    print("What to add?")
+    print(" 1) New Fighter")
+    print(" 2) New Game")
+    choice = input("> ")
+
+    if choice.lower() in ["1", "fighter", "fighters"]:
+        fighters.add()
+        write_data(fighters, games, False)
+    elif choice.lower() in ["2", "game", "games"]:
+        games.add()
+        write_data(fighters, games, False)
+    else:
+        print("Invalid Option - returning to main menu")
+        print("========================================")
+
+
+def remove_menu(fighters, games):
+    '''Menu to control remove method flow if not specified as argument to parser'''
+    print("What to remove?")
+    print(" 1) Remove Fighter")
+    print(" 2) Remove Game")
+    choice = input("> ")
+
+    if choice.lower() in ["1", "fighter", "fighters"]:
+        fighters.remove()
+        write_data(fighters, games, False)
+    elif choice.lower() in ["2", "game", "games"]:
+        games.remove()
+        write_data(fighters, games, False)
+    else:
+        print("Invalid Option - returning to main menu")
+        print("========================================")
+
+
+def list_menu(fighters, games):
+    '''Menu to control list method flow if not specified as argument to parser'''
+    print("What to list?")
+    print(" 1) List Fighters")
+    print(" 2) List Games")
+    choice = input("> ")
+
+    if choice.lower() in ["1", "fighter", "fighters"]:
+        fighters.list(False)
+    elif choice.lower() in ["2", "game", "games"]:
+        games.list(False)
+    else:
+        print("Invalid Option - returning to main menu")
+        print("========================================")
+
+
+def rank_menu(fighters, games):
+    '''Menu to control rank method flow if not specified as argument to parser'''
+    print("What to rank?")
+    print(" 1) Rank Fighters")
+    print(" 2) Rank Games")
+    choice = input("> ")
+
+    if choice.lower() in ["1", "fighter", "fighters"]:
+        fighters.list(True)
+    elif choice.lower() in ["2", "game", "games"]:
+        games.list(True)
+    else:
+        print("Invalid Option - returning to main menu")
+        print("========================================")
+
+
 #----- Data -----
-def sort_fighters(rank, fighters):
-    '''Accepts and returns fighters sorted by either rank or number of matches'''
-    if rank: # Sort by w/l
-        fighters = {k: v for k, v in sorted(fighters.items(), key=lambda item: item[1]["wins"]/item[1]["matches"] if item[1]["matches"] else 0, reverse = True)}
-
-    else: # Sort by # of matches
-        fighters = {k: v for k, v in sorted(fighters.items(), key=lambda item: item[1]["matches"], reverse = True)}
-
-    return fighters
-
-
-def sort_games(games):
-    '''Accepts and returns games sorted by number of matches'''
-    games = {k: v for k, v in sorted(games.items(), key=lambda item: item[1], reverse = True)}
-
-    return games
-
-
-def write_data(backup):
-    '''Writes data to JSON file and backup file'''
-    global fighters, games
-
-    fighters = sort_fighters(False, fighters)
-    games = sort_games(games)
-    data = {"fighters":fighters, "games":games}
+def write_data(fighters, games, backup):
+    '''Writes data to JSON file or backup file, depending on bool backup'''
+    data = {"fighters":fighters.data, "games":games.data}
 
     if not backup:
         with open('data.json', 'w', encoding='utf-8') as dataFile:
@@ -54,6 +379,15 @@ def write_data(backup):
     else:
         with open('.data.json.backup', 'w', encoding='utf-8') as dataFile:
             json.dump(data, dataFile, ensure_ascii=False, indent=4)
+
+
+def create_data_file():
+    '''Creates blank data file'''
+    data = {"fighters":{}, "games":{}}
+    with open('data.json', 'w', encoding='utf-8') as dataFile:
+        json.dump(data, dataFile, ensure_ascii=False, indent=4)
+
+    return data
 
 
 def read_data():
@@ -66,276 +400,31 @@ def read_data():
         try:
             with open('.data.json.backup') as dataFile:
                 data = json.load(dataFile)
-                write_data(False)
+                write_data(data["fighters"], data["games"], False)
 
         except:
-            data = {"fighters":{}, "games":{}}
-            write_data(False)
+            data = create_data_file()
 
-    return data["fighters"], data["games"]
-
-
-#----- Features -----
-def confirm():
-    '''Confirm user input, returns bool'''
-    choice = input("Please confirm <y/n>: ")
-    confirmed = False
-    if choice[0].lower() == "y":
-        confirmed = True
-
-    return confirmed
-
-
-def select_fighter():
-    '''Displays menu for selecting fighters from list, accepts input and returns selection'''
-    fighterList = []
-    selection = None
-    c = 1
-
-    for f, matches in fighters.items():
-        print(" " + str(c) + ") " + f)
-        fighterList.append(f)
-        c += 1
-
-    choice = input("> ")
-    if choice.isdigit() and int(choice) <= len(fighterList):
-        selection = fighterList[int(choice) - 1]
-
-    return selection
-
-
-def select_game():
-    '''Displays menu for selecting games from list, accepts input and returns selection'''
-    gameList = []
-    selection = None
-    c = 1
-
-    for g, matches in games.items():
-        print(" " + str(c) + ") " + g)
-        gameList.append(g)
-        c += 1
-
-    choice = input("> ")
-    if choice.isdigit() and int(choice) <= len(gameList):
-        selection = gameList[int(choice) - 1]
-
-    return selection
-
-
-def add_fighter():
-    '''Adds a fighter to roster'''
-    print("A New Fighter Approaches!")
-    name = input("Fighter Name: ")
-
-    if name not in fighters.keys() and name != '':
-        print("========================================")
-        print("Add new fighter " + name + "?")
-        if confirm():
-            fighters[name] = {
-            "wins": 0,
-            "matches": 0,
-            "balance": 0}
-
-            write_data(False)
-            print("Fighter " + name + " has entered the game")
-
-        print("========================================")
-
-    else:
-        print("Sorry, that name is unavailable, enter another?")
-        if confirm():
-            add_fighter()
-        print("========================================")
-
-
-def add_game():
-    '''Adds a new game to the game list'''
-    print("A New Challenge Draws Near!")
-    name = input("Game Name: ")
-
-    if name not in games.keys() and name != '':
-        print("========================================")
-        print("Add new game " + name + "?")
-        if confirm():
-            games[name] = 0
-
-            write_data(False)
-            print(name + " has been added to games")
-
-        print("========================================")
-
-    else:
-        print("Sorry, that name is unavailable, enter another?")
-        if confirm():
-            add_game()
-        print("========================================")
-
-
-def add_menu():
-    '''Menu to select whether to add fighter or game'''
-    print("What to add?")
-    print(" 1) New Fighter")
-    print(" 2) New Game")
-    choice = input("> ")
-    print("========================================")
-
-    if choice.lower() in ["1", "fighter", "fighters"]:
-        add_fighter()
-    elif choice.lower() in ["2", "game", "games"]:
-        add_game()
-    else:
-        print("Invalid Option - returning to main menu")
-        print("========================================")
-
-
-def remove_fighter():
-    '''Remove a single fighter from the roster'''
-    print("Remove a fighter")
-    name = select_fighter()
-
-    if name in fighters.keys():
-        print("========================================")
-        print("Remove fighter " + name + "?")
-        if confirm():
-            del fighters[name]
-            write_data(False)
-            print(name + " has been stricken from the records")
-
-        print("========================================")
-
-    else:
-        print("Invalid Name - returning to main menu")
-        print("========================================")
-
-
-def remove_game():
-    '''Removes a single game from the game list'''
-    print("Remove a game")
-    name = select_game()
-
-    if name in games.keys():
-        print("========================================")
-        print("Remove game " + name + "?")
-        if confirm():
-            del games[name]
-            write_data(False)
-            print(name + " has been stricken from the records")
-
-        print("========================================")
-
-    else:
-        print("Invalid Game - returning to main menu")
-        print("========================================")
-
-
-def remove_menu():
-    '''Menu to select whether to remove fighter or game'''
-    print("What to remove?")
-    print(" 1) Remove Fighter")
-    print(" 2) Remove Game")
-    choice = input("> ")
-    print("========================================")
-
-    if choice.lower() in ["1", "fighter", "fighters"]:
-        remove_fighter()
-    elif choice.lower() in ["2", "game", "games"]:
-        remove_game()
-    else:
-        print("Invalid Option - returning to main menu")
-        print("========================================")
-
-
-def list_fighters():
-    '''List all fighters by thenumber of matches played'''
-    labels = ["Name", "Wins", "Matches", "Balance"]
-    head = ["----", "----", "-------", "-------"]
-    print(" {: <10} {: <5} {: <8} {: <8}".format(*labels))
-    print(" {: <10} {: <5} {: <8} {: <8}".format(*head))
-    for f, stats in fighters.items():
-        print(" {: <10} {: <5} {: <8} ${: <8}".format(f, *stats.values()))
-    print("========================================")
-
-
-def rank_fighters():
-    '''List all fighters by their w/l records'''
-    global fighters
-    ranks = sort_fighters(True, fighters)
-
-    labels = ["Name", "Wins", "Matches", "Balance"]
-    head = ["----", "----", "-------", "-------"]
-    print(" {: <10} {: <5} {: <8} {: <8}".format(*labels))
-    print(" {: <10} {: <5} {: <8} {: <8}".format(*head))
-    for f, stats in ranks.items():
-        print(" {: <10} {: <5} {: <8} ${: <8}".format(f, *stats.values()))
-    print("========================================")
-
-
-def rank_games():
-    '''Lists all games by matches on record'''
-    print("========================================")
-    labels = ["Name", "Matches"]
-    head = ["----", "-------"]
-    print(" {: <18} {: <5}".format(*labels))
-    print(" {: <18} {: <5}".format(*head))
-    for g, matches in games.items():
-        print(" {: <18} {: <5}".format(g, matches))
-    print("========================================")
-
-
-#----- Commands -----
-def cmd_input():
-    '''Collect command input to pass to parser'''
-    cmd = input("> ")
-    cmd = cmd.split(" ")
-    return cmd
-
-
-def cmd_parse(cmd):
-    '''Parses list of commands and executes features'''
-    if cmd[0].lower() in ["exit","quit","q"]:
-        sys.exit()
-
-    elif cmd[0].lower() in ["help","h","?",""]:
-        print_help()
-
-    elif cmd[0].lower() in ["add", "new"]:
-        add_menu()
-
-    elif cmd[0].lower() in ["remove", "rm"]:
-        remove_menu()
-
-    elif cmd[0].lower() in ["list", "ls"]:
-        list_fighters()
-
-    elif cmd[0].lower() in ["rank", "ranks"]:
-        rank_fighters()
-
-    elif cmd[0].lower() in ["game", "games"]:
-        rank_games()
-
-    elif cmd[0].lower() in ["save", "s"]:
-        write_data(False)
-        print("Data has been saved")
-        print("========================================")
-
-    else:
-        print("Invalid command! Type HELP for a list of commands")
-        print("========================================")
+    return data
 
 
 #----------------------
 def setup():
-    global fighters, games # Global data objects
-    fighters, games = read_data()
-    write_data(True) # Save backup
+    parser = Parser()
+    data = read_data()
+    fighters = Fighters(data['fighters'])
+    games = Games(data['games'])
+    write_data(fighters, games, True) # Save backup
     print("GrudgeMatch - Lets get down to business!")
+
+    return parser, fighters, games
 
 
 def main():
-    setup() # Runs once
+    parser, fighters, games = setup() # Runs once
     while True: # Main loop
         print("Type HELP for a list of commands, QUIT to exit")
-        cmd_parse(cmd_input())
+        parser.parse(fighters, games, parser.command())
 
 
 #=============================================

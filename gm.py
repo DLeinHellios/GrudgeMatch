@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# gm.py - GrudgeMatch, simple CLI recordkeeping for fighting games
+# gm.py - GrudgeMatch: simple CLI record-keeping for fighting games
 
 import sys, datetime, os, json
 
@@ -81,7 +81,6 @@ class Fighters():
             if confirm():
 
                 self.add()
-
 
 
     def remove(self):
@@ -323,6 +322,9 @@ class Match:
                             if not confirm():
                                 rematch = False
                                 print()
+
+                        else:
+                            rematch = False
 
             else:
                 print("Invalid Match Options - try again?")

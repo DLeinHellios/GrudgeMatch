@@ -310,12 +310,19 @@ class Match:
             if g != None and p1 != None and p2 != None:
                 print("\nBegin match between " + p1 + " and " + p2 + " in " + g + "?")
                 if confirm():
-                    self.draw(p1, p2, g)
-                    match = self.record(p1, p2, g)
-                    if match != None:
-                        self.save(match)
-                        update_data(fighters, games, match)
-                        print()
+                    rematch = True
+                    while rematch:
+                        self.draw(p1, p2, g)
+                        match = self.record(p1, p2, g)
+                        if match != None:
+                            self.save(match)
+                            update_data(fighters, games, match)
+                            print()
+
+                            print("Begin a rematch?")
+                            if not confirm():
+                                rematch = False
+                                print()
 
             else:
                 print("Invalid Match Options - try again?")

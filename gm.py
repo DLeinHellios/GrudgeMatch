@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # gm.py - GrudgeMatch: simple CLI record-keeping for fighting games
 
-import sys, datetime, os, json
+import sys, datetime, os, random, json
 
 
 class Fighters():
@@ -170,7 +170,6 @@ class Games():
             print("Error - name exceeds max characters (30)")
 
         return valid
-
 
 
     def add(self):
@@ -349,7 +348,7 @@ class Parser:
         elif cmd[0].lower() in ["help","h","?",""]:
             print_help()
 
-        elif cmd[0].lower() in ["match", "fight", "challenge"]:
+        elif cmd[0].lower() in ["match", "fight", "challenge", "m"]:
             match.conduct(fighters, games)
 
         elif cmd[0].lower() in ["add", "new"]:
@@ -421,9 +420,27 @@ def print_help():
     print(" REMOVE - Remove a fighter or game")
     print(" LIST - Lists fighters by matches, or games by name")
     print(" RANK - Ranks fighters by records, or games by matches")
-#    print(" DEPOSIT - Add money to a fighter's account balance")
-#    print(" WITHDRAW - Remove money from a fighter's account balance")
     print(" QUIT - Exit GrudgeMatch\n")
+
+
+def get_tagline():
+    '''Returns a random tagline, for fun'''
+    tag = random.choice([
+        "Try that on my command line!",
+        "We're checking the tapes",
+        "Wiggity Washed",
+        "Sonic Boom!",
+        "Round 1: Fight",
+        "Perfect KO!",
+        "C-C-C-Combo Breaker!",
+        "Finish Him!",
+        "Bring on the cheese",
+        "Ultra Ver.1.x.x Turbo",
+        "My buttons don't work",
+        "Wakeup Reversal",
+    ])
+
+    return tag
 
 
 def confirm():
@@ -561,7 +578,8 @@ def setup():
     games = Games(data['games'])
     match = Match()
     write_data(fighters, games, True) # Save backup
-    print("GrudgeMatch - Lets get down to business!")
+    tagline = get_tagline()
+    print("GrudgeMatch - " + tagline)
 
     return parser, fighters, games, match
 

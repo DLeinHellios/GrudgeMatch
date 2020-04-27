@@ -75,10 +75,11 @@ class Fighters():
         return valid
 
 
-    def add(self):
+    def add(self, name):
         '''Creates a new fighter record'''
-        print("A New Fighter Approaches!")
-        name = input("Fighter Name: ")
+        if name == None:
+            print("A New Fighter Approaches!")
+            name = input("Fighter Name: ")
 
         if self.validate_name(name):
             print("\nAdd new fighter " + name + "?")
@@ -88,16 +89,19 @@ class Fighters():
                 print("Fighter " + name + " has entered the game\n")
 
         else:
-            print("Error submitting name, try again?\n")
+            print("Error submitting name, try again?")
             if confirm():
+                print()
+                self.add(None)
+            else:
+                print()
 
-                self.add()
 
-
-    def remove(self):
+    def remove(self, name):
         '''Delete a single fighter record'''
-        print("Remove a fighter")
-        name = self.select(None)
+        if name == None:
+            print("Remove a fighter")
+            name = self.select(None)
 
         if name in self.data.keys():
             print("\nRemove fighter " + name + "?")
@@ -192,10 +196,11 @@ class Games():
         return valid
 
 
-    def add(self):
+    def add(self, name):
         '''Adds a new game to the game list'''
-        print("A New Challenge Draws Near!")
-        name = input("Game Name: ")
+        if name == None:
+            print("A New Challenge Draws Near!")
+            name = input("Game Name: ")
 
         if self.validate_name(name):
             print("\nAdd new game " + name + "?")
@@ -204,15 +209,19 @@ class Games():
                 print(name + " has been added to games library\n")
 
         else:
-            print("Error submitting name, try again?\n")
+            print("Error submitting name, try again?")
             if confirm():
-                self.add()
+                print()
+                self.add(None)
+            else:
+                print()
 
 
-    def remove(self):
-        '''Removes a single game from the game list'''
-        print("Remove a game")
-        name = self.select()
+    def remove(self, name):
+        '''Deletes a single game from the game list'''
+        if name == None:
+            print("Remove a game")
+            name = self.select()
 
         if name in self.data.keys():
             print("\nRemove game " + name + "?")
@@ -360,44 +369,77 @@ class Parser:
         return cmd
 
 
+    def parse_add(self, fighters, games, cmd):
+        if len(cmd) < 2:
+            add_menu(fighters, games)
+
+        elif len(cmd) == 2:
+            if cmd[1].lower() in ["game", "games", "g"]:
+                print()
+                games.add(None)
+                write_data(fighters, games, False)
+            elif cmd[1].lower() in ["fighter", "fighters", "f"]:
+                print()
+                fighters.add(None)
+                write_data(fighters, games, False)
+            else:
+                print("Invalid Option - returning to main menu\n")
+
+        else:
+            if cmd[1].lower() in ["game", "games", "g"]:
+                games.add(cmd[2])
+                write_data(fighters, games, False)
+            elif cmd[1].lower() in ["fighter", "fighters", "f"]:
+                fighters.add(cmd[2])
+                write_data(fighters, games, False)
+            else:
+                print("Invalid Option - returning to main menu\n")
+
+
+    def parse_rm(self, fighters, games, cmd):
+        if len(cmd) < 2:
+            remove_menu(fighters, games)
+
+        elif len(cmd) == 2:
+            if cmd[1].lower() in ["game", "games", "g"]:
+                print()
+                games.remove(None)
+                write_data(fighters, games, False)
+            elif cmd[1].lower() in ["fighter", "fighters", "f"]:
+                print()
+                fighters.remove(None)
+                write_data(fighters, games, False)
+            else:
+                print("Invalid Option - returning to main menu\n")
+
+        else:
+            if cmd[1].lower() in ["game", "games", "g"]:
+                games.remove(cmd[2])
+                write_data(fighters, games, False)
+            elif cmd[1].lower() in ["fighter", "fighters", "f"]:
+                fighters.remove(cmd[2])
+                write_data(fighters, games, False)
+            else:
+                print("Invalid Option - returning to main menu\n")
+
+
     def parse(self, fighters, games, match, cmd):
         '''Parses list of commands and executes features'''
         if cmd[0].lower() in ["exit","quit","q"]:
+            print("Exiting GrudgeMatch\n")
             sys.exit()
 
         elif cmd[0].lower() in ["help","h","?",""]:
             print_help()
 
-        elif cmd[0].lower() in ["match", "fight", "challenge", "m"]:
+        elif cmd[0].lower() in ["match", "m", "run"]:
             match.conduct(fighters, games)
 
         elif cmd[0].lower() in ["add", "new"]:
-            if len(cmd) < 2:
-                add_menu(fighters, games)
-            else:
-                if cmd[1].lower() in ["game", "games"]:
-                    print()
-                    games.add()
-                    write_data(fighters, games, False)
-                elif cmd[1].lower() in ["fighter", "fighters"]:
-                    print()
-                    fighters.add()
-                    write_data(fighters, games, False)
-                else:
-                    print("Invalid Option - returning to main menu\n")
+            self.parse_add(fighters, games, cmd)
 
         elif cmd[0].lower() in ["remove", "rm"]:
-            if len(cmd) < 2:
-                remove_menu(fighters, games)
-            else:
-                if cmd[1].lower() in ["game", "games"]:
-                    games.remove()
-                    write_data(fighters, games, False)
-                elif cmd[1].lower() in ["fighter", "fighters"]:
-                    fighters.remove()
-                    write_data(fighters, games, False)
-                else:
-                    print("Invalid Option - returning to main menu\n")
+            self.parse_rm(fighters, games, cmd)
 
         elif cmd[0].lower() in ["list", "ls"]:
             if len(cmd) < 2:
@@ -461,8 +503,9 @@ def get_tagline():
         "Whens Mahvel",
         "Clip that sh*t"
         "Super Ver.1.x.x: Turbo",
-        "Time for a salty runback",
-        "Just pick a top-tier"
+        "Bring on the salty runback",
+        "Just pick a top-tier",
+        "Get ready for the next battle!"
     ])
 
     return tag
@@ -488,11 +531,11 @@ def add_menu(fighters, games):
     print(" 2) New Game")
     choice = input("> ")
 
-    if choice.lower() in ["1", "fighter", "fighters"]:
-        fighters.add()
+    if choice.lower() in ["1", "fighter", "fighters", "f"]:
+        fighters.add(None)
         write_data(fighters, games, False)
-    elif choice.lower() in ["2", "game", "games"]:
-        games.add()
+    elif choice.lower() in ["2", "game", "games", "g"]:
+        games.add(None)
         write_data(fighters, games, False)
     else:
         print("Invalid Option - returning to main menu\n")
@@ -505,11 +548,11 @@ def remove_menu(fighters, games):
     print(" 2) Remove Game")
     choice = input("> ")
 
-    if choice.lower() in ["1", "fighter", "fighters"]:
-        fighters.remove()
+    if choice.lower() in ["1", "fighter", "fighters", "f"]:
+        fighters.remove(None)
         write_data(fighters, games, False)
-    elif choice.lower() in ["2", "game", "games"]:
-        games.remove()
+    elif choice.lower() in ["2", "game", "games", "g"]:
+        games.remove(None)
         write_data(fighters, games, False)
     else:
         print("Invalid Option - returning to main menu\n")
@@ -626,10 +669,14 @@ def setup():
 
 
 def main():
-    parser, fighters, games, match = setup() # Runs once
-    while True: # Main loop
-        print("Type HELP for a list of commands, QUIT to exit")
-        parser.parse(fighters, games, match, parser.command())
+    try:
+        parser, fighters, games, match = setup() # Runs once
+        while True: # Main loop
+            print("Type HELP for a list of commands, QUIT to exit")
+            parser.parse(fighters, games, match, parser.command())
+
+    except KeyboardInterrupt:
+        print("\nExiting GrudgeMatch\n")
 
 
 #=============================================

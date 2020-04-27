@@ -10,13 +10,25 @@ class Fighters():
         self.data = data
 
 
+    def get_wl(self, total):
+        '''Generates W/L values for fighter rankings'''
+        if total[1] == 0: # No matches
+            wl = -1
+        elif total[0] == total[1]: # Undefeated
+            wl = 999999
+        else:
+            wl = total[0] / (total[1] - total[0])
+
+        return wl
+
+
     def sort(self, rank):
         '''Returns fighters.data sorted by rank or n matches'''
-        if rank: # Sort by w/l ratio
-            fighters = {k: v for k, v in sorted(self.data.items(), key=lambda item: item[1]["wins"]/item[1]["matches"] if item[1]["matches"] else 0, reverse = True)}
+        if rank: # W/L ratio
+            fighters = {k: v for k, v in sorted(self.data.items(), key=lambda item: self.get_wl(item[1]['total']), reverse=True)}
 
-        else: # Sort by number of matches
-            fighters = {k: v for k, v in sorted(self.data.items(), key=lambda item: item[1]["matches"], reverse = True)}
+        else: # A-Z
+            fighters = {k: v for k, v in sorted(self.data.items(),  key=lambda item: item[0], reverse=False)}
 
         return fighters
 
@@ -71,9 +83,8 @@ class Fighters():
         if self.validate_name(name):
             print("\nAdd new fighter " + name + "?")
             if confirm():
-                self.data[name] = {
-                    "wins": 0,
-                    "matches": 0}
+                self.data[name] = {"total": [0,0], "game": {}}
+
                 print("Fighter " + name + " has entered the game\n")
 
         else:
@@ -104,12 +115,21 @@ class Fighters():
         '''Prints list of fighters sorted by rank or n matches'''
         ranks = self.sort(rank)
         print()
-        labels = ["Name", "Wins", "Matches"]
-        head = ["----", "----", "-------"]
-        print(" {: <15} {: <5} {: <8}".format(*labels))
-        print(" {: <15} {: <5} {: <8}".format(*head))
+        labels = ["Name", "Wins", "Total", "W/L"]
+        head = ["--------------", "----", "-----", "----"]
+        print(" {: <15} {: <5} {: <6} {: <4}".format(*labels))
+        print(" {: <15} {: <5} {: <6} {: <4}".format(*head))
         for f, stats in ranks.items():
-            print(" {: <15} {: <5} {: <8}".format(f, *stats.values()))
+            l = stats["total"][1] - stats["total"][0]
+
+            if stats["total"][1] == 0:
+                wl = "N/A"
+            elif l == 0:
+                wl = "UNDF"
+            else:
+                wl = str(round(stats["total"][0] / l if l else 0, 2))
+
+            print(" {: <15} {: <5} {: <6} {: <4}".format(f, *stats["total"], wl))
         print()
 
 
@@ -211,7 +231,7 @@ class Games():
         ranks = self.sort(rank)
         print()
         labels = ["Name", "Matches"]
-        head = ["----", "-------"]
+        head = ["------------------------------", "-------"]
         print(" {: <31} {: <5}".format(*labels))
         print(" {: <31} {: <5}".format(*head))
         for g, matches in ranks.items():
@@ -435,9 +455,14 @@ def get_tagline():
         "C-C-C-Combo Breaker!",
         "Finish Him!",
         "Bring on the cheese",
-        "Ultra Ver.1.x.x Turbo",
+        "Ultra Ver.1.x.x: Turbo",
         "My buttons don't work",
-        "Wakeup Reversal",
+        "Wakeup Uppercut",
+        "Whens Mahvel",
+        "Clip that sh*t"
+        "Super Ver.1.x.x: Turbo",
+        "Time for a salty runback",
+        "Just pick a top-tier"
     ])
 
     return tag
@@ -527,19 +552,35 @@ def write_data(fighters, games, backup):
 
     if not backup:
         with open('data.json', 'w', encoding='utf-8') as dataFile:
-            json.dump(data, dataFile, ensure_ascii=False, indent=4)
+            json.dump(data, dataFile, ensure_ascii=False, indent=2)
 
     else:
         with open('.data.json.backup', 'w', encoding='utf-8') as dataFile:
-            json.dump(data, dataFile, ensure_ascii=False, indent=4)
+            json.dump(data, dataFile, ensure_ascii=False, indent=2)
 
 
 def update_data(fighters, games, match):
     '''Updates fighter and game data post-match'''
-    fighters.data[match[2]]['matches'] += 1
-    fighters.data[match[3]]['matches'] += 1
-    fighters.data[match[4]]['wins'] += 1
-    games.data[match[1]] += 1
+    g = match[1]
+    d,g,p1,p2,w = match[0],match[1],match[2],match[3],match[4]
+
+    fighters.data[p1]['total'][1] += 1
+    fighters.data[p2]['total'][1] += 1
+    fighters.data[w]['total'][0] += 1
+
+    if g in fighters.data[p1]['game'].keys():
+        fighters.data[p1]['game'][g][1] += 1
+    else:
+        fighters.data[p1]['game'][g] = [0,1]
+
+    if g in fighters.data[p2]['game'].keys():
+        fighters.data[p2]['game'][g][1] += 1
+    else:
+        fighters.data[p2]['game'][g] = [0,1]
+
+    fighters.data[w]['game'][g][0] += 1
+    games.data[g] += 1
+
     write_data(fighters, games, False)
 
 

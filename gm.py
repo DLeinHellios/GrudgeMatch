@@ -7,7 +7,7 @@ import sys, datetime, os, random, json
 class Fighters():
     def __init__(self, data):
         '''Manages fighter data'''
-        self.data = data
+        self.data = data['players']
 
 
     def get_wl(self, total):
@@ -84,7 +84,7 @@ class Fighters():
         if self.validate_name(name):
             print("\nAdd new fighter " + name + "?")
             if confirm():
-                self.data[name] = {"total": [0,0], "game": {}}
+                self.data[name] = {"total": [0,0], "last": None, "game": {}}
 
                 print("Fighter " + name + " has entered the game\n")
 
@@ -141,7 +141,7 @@ class Fighters():
 class Games():
     def __init__(self, data):
         '''Manages game data'''
-        self.data = data
+        self.data = data['games']
 
 
     def sort(self, rank):
@@ -269,15 +269,15 @@ class Match:
 
     def save(self, match):
         '''Saves the match record to records.csv'''
-        if not os.path.isfile("records.csv"):
-            with open('records.csv', 'a') as recordsFile:
-                recordsFile.write("date,game,p1,p2,win\n")
+        if not os.path.isfile(os.path.join('data', 'records.csv')):
+            with open(os.path.join('data', 'records.csv'), 'a') as recordsFile:
+                recordsFile.write('date,game,p1,p2,win\n')
                 record = ",".join(match) + "\n"
                 recordsFile.write(record)
 
         else:
             record = ",".join(match) + "\n"
-            with open('records.csv', 'a') as recordsFile:
+            with open(os.path.join('data', 'records.csv'), 'a') as recordsFile:
                 recordsFile.write(record)
 
         print("\n" + match[4] + " has been declared the victor in " + match[1])
@@ -377,21 +377,21 @@ class Parser:
             if cmd[1].lower() in ["game", "games", "g"]:
                 print()
                 games.add(None)
-                write_data(fighters, games, False)
+                write_games(games.data)
             elif cmd[1].lower() in ["fighter", "fighters", "f"]:
                 print()
                 fighters.add(None)
-                write_data(fighters, games, False)
+                write_fighters(fighters.data)
             else:
                 print("Invalid Option - returning to main menu\n")
 
         else:
             if cmd[1].lower() in ["game", "games", "g"]:
                 games.add(cmd[2])
-                write_data(fighters, games, False)
+                write_games(games.data)
             elif cmd[1].lower() in ["fighter", "fighters", "f"]:
                 fighters.add(cmd[2])
-                write_data(fighters, games, False)
+                write_fighters(fighters.data)
             else:
                 print("Invalid Option - returning to main menu\n")
 
@@ -404,21 +404,21 @@ class Parser:
             if cmd[1].lower() in ["game", "games", "g"]:
                 print()
                 games.remove(None)
-                write_data(fighters, games, False)
+                write_games(games.data)
             elif cmd[1].lower() in ["fighter", "fighters", "f"]:
                 print()
                 fighters.remove(None)
-                write_data(fighters, games, False)
+                write_fighters(fighters.data)
             else:
                 print("Invalid Option - returning to main menu\n")
 
         else:
             if cmd[1].lower() in ["game", "games", "g"]:
                 games.remove(cmd[2])
-                write_data(fighters, games, False)
+                write_games(games.data)
             elif cmd[1].lower() in ["fighter", "fighters", "f"]:
                 fighters.remove(cmd[2])
-                write_data(fighters, games, False)
+                write_fighters(fighters.data)
             else:
                 print("Invalid Option - returning to main menu\n")
 
@@ -464,7 +464,8 @@ class Parser:
                     print("Invalid Option - returning to main menu\n")
 
         elif cmd[0].lower() in ["save", "s"]:
-            write_data(fighters, games, False)
+            write_games(games.data)
+            write_fighters(fighters.data)
             print("Data has been saved\n")
 
         else:
@@ -533,10 +534,10 @@ def add_menu(fighters, games):
 
     if choice.lower() in ["1", "fighter", "fighters", "f"]:
         fighters.add(None)
-        write_data(fighters, games, False)
+        write_fighters(fighters.data)
     elif choice.lower() in ["2", "game", "games", "g"]:
         games.add(None)
-        write_data(fighters, games, False)
+        write_games(games.data)
     else:
         print("Invalid Option - returning to main menu\n")
 
@@ -550,10 +551,10 @@ def remove_menu(fighters, games):
 
     if choice.lower() in ["1", "fighter", "fighters", "f"]:
         fighters.remove(None)
-        write_data(fighters, games, False)
+        write_fighters(fighters.data)
     elif choice.lower() in ["2", "game", "games", "g"]:
         games.remove(None)
-        write_data(fighters, games, False)
+        write_games(games.data)
     else:
         print("Invalid Option - returning to main menu\n")
 
@@ -589,17 +590,18 @@ def rank_menu(fighters, games):
 
 
 #----- Data -----
-def write_data(fighters, games, backup):
-    '''Writes data to JSON file or backup file, depending on bool backup'''
-    data = {"fighters":fighters.data, "games":games.data}
+def write_fighters(fighters):
+    '''Writes data to players.json'''
+    data = {'players':fighters}
+    with open(os.path.join('data', 'players.json'), 'w', encoding='utf-8') as fFile:
+        json.dump(data, fFile, ensure_ascii=False, indent=2)
 
-    if not backup:
-        with open('data.json', 'w', encoding='utf-8') as dataFile:
-            json.dump(data, dataFile, ensure_ascii=False, indent=2)
 
-    else:
-        with open('.data.json.backup', 'w', encoding='utf-8') as dataFile:
-            json.dump(data, dataFile, ensure_ascii=False, indent=2)
+def write_games(games):
+    '''Writes data to games.json'''
+    data = {'games':games}
+    with open(os.path.join('data', 'games.json'), 'w', encoding='utf-8') as gFile:
+        json.dump(data, gFile, ensure_ascii=False, indent=2)
 
 
 def update_data(fighters, games, match):
@@ -610,6 +612,10 @@ def update_data(fighters, games, match):
     fighters.data[p1]['total'][1] += 1
     fighters.data[p2]['total'][1] += 1
     fighters.data[w]['total'][0] += 1
+
+    today = datetime.date.today()
+    fighters.data[p1]['last'] = today.strftime("%m/%d/%Y")
+    fighters.data[p2]['last'] = today.strftime("%m/%d/%Y")
 
     if g in fighters.data[p1]['game'].keys():
         fighters.data[p1]['game'][g][1] += 1
@@ -624,44 +630,52 @@ def update_data(fighters, games, match):
     fighters.data[w]['game'][g][0] += 1
     games.data[g] += 1
 
-    write_data(fighters, games, False)
+    write_fighters(fighters.data)
+    write_games(games.data)
 
 
-def create_data_file():
-    '''Creates blank data file'''
-    data = {"fighters":{}, "games":{}}
-    with open('data.json', 'w', encoding='utf-8') as dataFile:
-        json.dump(data, dataFile, ensure_ascii=False, indent=4)
+def create_fighter_file():
+    '''Creates blank fighter file'''
+    f = {"players":{}}
+    with open(os.path.join('data', 'players.json'), 'w', encoding='utf-8') as fFile:
+        json.dump(f, fFile, ensure_ascii=False, indent=2)
 
-    return data
+    return f
+
+
+def create_game_file():
+    '''Creates blank game file'''
+    g = {"games":{}}
+    with open(os.path.join('data', 'games.json'), 'w', encoding='utf-8') as gFile:
+        json.dump(g, gFile, ensure_ascii=False, indent=2)
+
+    return g
 
 
 def read_data():
     '''Loads data from data.json or backup, creates blank data.json if missing'''
     try:
-        with open('data.json') as dataFile:
-            data = json.load(dataFile)
-
+        with open(os.path.join('data', 'players.json')) as fFile:
+            fighters = json.load(fFile)
     except:
-        try:
-            with open('.data.json.backup') as dataFile:
-                data = json.load(dataFile)
-                write_data(data["fighters"], data["games"], False)
+        fighters = create_fighter_file()
 
-        except:
-            data = create_data_file()
+    try:
+        with open(os.path.join('data', 'games.json')) as gFile:
+            games = json.load(gFile)
+    except:
+        games = create_game_file()
 
-    return data
+    return fighters, games
 
 
 #----------------------
 def setup():
     parser = Parser()
-    data = read_data()
-    fighters = Fighters(data['fighters'])
-    games = Games(data['games'])
+    fData,gData = read_data()
+    fighters = Fighters(fData)
+    games = Games(gData)
     match = Match()
-    write_data(fighters, games, True) # Save backup
     tagline = get_tagline()
     print("GrudgeMatch - " + tagline)
 

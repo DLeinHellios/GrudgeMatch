@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 # gm.py - GrudgeMatch: simple CLI record-keeping for fighting games
+# Copyright 2020 Dylan Lein-Hellios
+# Licensed under Apache 2.0
 
 import sys, datetime, os, random, json
 

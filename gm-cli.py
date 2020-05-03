@@ -1,15 +1,35 @@
 #!/usr/bin/env python3
 # gm-cli.py - GrudgeMatch: simple CLI record-keeping for fighting games
 # Copyright 2020 Dylan Lein-Hellios
-# Provided under the Apache 2.0 license
+# Provided under the Apache License 2.0
 
 import sys, datetime, os, random, json
 
 
 class Fighters():
-    def __init__(self, data):
+    def __init__(self):
         '''Manages fighter data'''
-        self.data = data['players']
+        self.read()
+
+
+    def create_file(self):
+        '''Creates blank fighter file'''
+        f = {"players":{}}
+        with open(os.path.join('data', 'players.json'), 'w', encoding='utf-8') as fFile:
+            json.dump(f, fFile, ensure_ascii=False, indent=2)
+
+        return f
+
+
+    def read(self):
+        '''Reads in players.json'''
+        try:
+            with open(os.path.join('data', 'players.json')) as fFile:
+                f = json.load(fFile)
+                self.data = f['players']
+        except:
+            f = self.create_file()
+            self.data = f['players']
 
 
     def get_wl(self, total):
@@ -141,9 +161,28 @@ class Fighters():
 
 
 class Games():
-    def __init__(self, data):
+    def __init__(self):
         '''Manages game data'''
-        self.data = data['games']
+        self.read()
+
+    def create_file(self):
+        '''Creates blank games file'''
+        g = {"games":{}}
+        with open(os.path.join('data', 'games.json'), 'w', encoding='utf-8') as gFile:
+            json.dump(g, gFile, ensure_ascii=False, indent=2)
+
+        return g
+
+
+    def read(self):
+        '''Reads in games.json'''
+        try:
+            with open(os.path.join('data', 'games.json')) as gFile:
+                g = json.load(gFile)
+                self.data = g['games']
+        except:
+            g = self.create_file()
+            self.data = g['games']
 
 
     def sort(self, rank):
@@ -470,6 +509,11 @@ class Parser:
             write_fighters(fighters.data)
             print("Data has been saved\n")
 
+        elif cmd[0].lower() in ["refresh", "r"]:
+            fighters.read()
+            games.read()
+            print("Data has been refreshed\n")
+
         else:
             print("Invalid Command! Type HELP for a list of commands\n")
 
@@ -591,7 +635,7 @@ def rank_menu(fighters, games):
         print("Invalid Option - returning to main menu\n")
 
 
-#----- Data -----
+#----- Data ----- # TODO - move all this into respective classes
 def write_fighters(fighters):
     '''Writes data to players.json'''
     data = {'players':fighters}
@@ -637,47 +681,11 @@ def update_data(fighters, games, match):
     write_games(games.data)
 
 
-def create_fighter_file():
-    '''Creates blank fighter file'''
-    f = {"players":{}}
-    with open(os.path.join('data', 'players.json'), 'w', encoding='utf-8') as fFile:
-        json.dump(f, fFile, ensure_ascii=False, indent=2)
-
-    return f
-
-
-def create_game_file():
-    '''Creates blank game file'''
-    g = {"games":{}}
-    with open(os.path.join('data', 'games.json'), 'w', encoding='utf-8') as gFile:
-        json.dump(g, gFile, ensure_ascii=False, indent=2)
-
-    return g
-
-
-def read_data():
-    '''Loads data from data.json or backup, creates blank data.json if missing'''
-    try:
-        with open(os.path.join('data', 'players.json')) as fFile:
-            fighters = json.load(fFile)
-    except:
-        fighters = create_fighter_file()
-
-    try:
-        with open(os.path.join('data', 'games.json')) as gFile:
-            games = json.load(gFile)
-    except:
-        games = create_game_file()
-
-    return fighters, games
-
-
 #----------------------
 def setup():
     parser = Parser()
-    fData,gData = read_data()
-    fighters = Fighters(fData)
-    games = Games(gData)
+    fighters = Fighters()
+    games = Games()
     match = Match()
     tagline = get_tagline()
     print("GrudgeMatch - " + tagline)

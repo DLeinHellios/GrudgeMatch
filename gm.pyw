@@ -4,7 +4,7 @@
 
 # Copyright 2020 Dylan Lein-Hellios
 # Logo by ZN
-# Provided under the Apache 2.0 license
+# Provided under the Apache License 2.0
 
 
 import tkinter as tk

@@ -35,7 +35,7 @@ class Players:
 
     def save(self):
         '''Writes to data/players.json'''
-        data = {'players':fighters}
+        data = {'players':self.all}
         with open(os.path.join('data', 'players.json'), 'w', encoding='utf-8') as pFile:
             json.dump(data, pFile, ensure_ascii=False, indent=2)
 
@@ -44,35 +44,35 @@ class Players:
         '''Returns a 0 for valid names, 1+ for error codes'''
         reserved = [
             '0','1','2','3','4','5','6','7','8','9',
-            'default', 'player', 'name', ''
+            'default', 'player', 'name', 'game'
         ]
 
         illegal = [
-            ',', '\\', '.'
+            ',', '\\', '.', "/"
         ]
 
         invalid = 0
 
+        if name in self.all.keys():
+            # Name in use
+            invalid = 1
         if name in reserved:
             # Name is on reserved list
-            invalid = 1
-
+            invalid = 2
         for i in illegal:
             if i in name:
                 # Name uses an illegal character
-                invalid = 2
-
+                invalid = 3
         if len(name) > 14:
             # Name is too long
-            invalid = 3
+            invalid = 4
 
         return invalid
 
 
     def add(self, name):
         '''Creates a new player entry'''
-        if not self.invalidate_name(name):
-            self.all[name] = {"total": [0,0], "last": None, "game": {}}
+        self.all[name] = {"total": [0,0], "last": None, "game": {}}
 
 
 
@@ -107,6 +107,48 @@ class Games:
             all = self.create_blank_file()
 
         return all['games']
+
+
+    def save(self):
+        '''Writes to data/games.json'''
+        data = {'games':self.all}
+        with open(os.path.join('data', 'games.json'), 'w', encoding='utf-8') as gFile:
+            json.dump(data, gFile, ensure_ascii=False, indent=2)
+
+
+    def invalidate_name(self, name):
+        '''Returns a 0 for valid names, 1+ for error codes'''
+        reserved = [
+            '0','1','2','3','4','5','6','7','8','9',
+            'default', 'player', 'name', 'game'
+        ]
+
+        illegal = [
+            ',', '\\', '.', "/"
+        ]
+
+        invalid = 0
+
+        if name in self.all.keys():
+            # Name in-use
+            invalid = 1
+        if name in reserved:
+            # Name is on reserved list
+            invalid = 2
+        for i in illegal:
+            if i in name:
+                # Name uses an illegal character
+                invalid = 3
+        if len(name) > 30:
+            # Name is too long
+            invalid = 4
+
+        return invalid
+
+
+    def add(self, name):
+        '''Creates a new game entry'''
+        self.all[name] = {"match": 0, "last": None}
 
 
 

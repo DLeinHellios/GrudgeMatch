@@ -117,9 +117,6 @@ class Data:
         self.games = Games()
         #self.records = Records()
 
-        print(self.players.all)
-        print(self.games.all)
-
 
     def save_all(self):
         #self.config.save()

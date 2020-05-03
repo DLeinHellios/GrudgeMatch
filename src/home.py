@@ -4,18 +4,38 @@ import os, sys
 
 
 class PlayerIcons:
-    def __init__(self, master):
+    def __init__(self, master, data):
         '''Contains all individual player buttons'''
-        self.avatar = tk.PhotoImage(master=master, file=os.path.join('img', 'avatars', '0.png'))
-        self.test = [ttk.Button(master, text="Fighter "+str(i), image=self.avatar, compound=tk.TOP, width=10) for i in range(25)]
+        self.generate(master, data)
         self.position(master)
+
+
+    def generate(self, master, data):
+        '''Generates player icon buttons from data object'''
+        self.icons = []
+        self.avatars = []
+        self.avatars.append(tk.PhotoImage(master=master, file=os.path.join('img', 'avatars', 'default.png')))
+
+        for name in data.players.all:
+            if os.path.isfile(os.path.join('img', 'avatars', name +  '.png')):
+                avatar = tk.PhotoImage(master=master, file=os.path.join('img', 'avatars', name +  '.png'))
+
+                if avatar.width() == 100 and avatar.height() == 100: # Only accept 100x100px
+                    self.avatars.append(avatar)
+                    self.icons.append(ttk.Button(master, text=name, image=self.avatars[-1], compound=tk.TOP, width=10))
+
+                else:
+                    self.icons.append(ttk.Button(master, text=name, image=self.avatars[0], compound=tk.TOP, width=10))
+
+            else:
+                self.icons.append(ttk.Button(master, text=name, image=self.avatars[0], compound=tk.TOP, width=10))
 
 
     def position(self, master):
         '''Repositions all player buttons - can get slow with large rosters'''
         col = master.winfo_width() // 110
         c,r = 0,0
-        for t in self.test:
+        for t in self.icons:
             t.grid(row=r, column=c)
             c += 1
 
@@ -30,7 +50,7 @@ class Sidebar:
         '''Class containing the sidebar buttons for the main window'''
         self.runM = tk.Button(master, text="Run Match", width=11)
         self.runS = tk.Button(master, text="Run Set", width=11)
-        self.addF = tk.Button(master, text="Add Fighter", width=11)
+        self.addF = tk.Button(master, text="Add Player", width=11)
         self.addG = tk.Button(master, text="Add Game", width=11)
         self.exit = tk.Button(master, text="Exit", command=sys.exit, width=11)
         self.position()
@@ -168,7 +188,7 @@ class Window:
 
         self.frames = Frames(self.root)
         self.sidebar = Sidebar(self.frames.sideFrame)
-        self.users = PlayerIcons(self.frames.scrollFrame)
+        self.users = PlayerIcons(self.frames.scrollFrame, self.data)
 
 
     def on_resize(self, event: tk.Event) -> None:

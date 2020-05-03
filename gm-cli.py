@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-# gm.py - GrudgeMatch: simple CLI record-keeping for fighting games
+# gm-cli.py - GrudgeMatch: simple CLI record-keeping for fighting games
 # Copyright 2020 Dylan Lein-Hellios
-# Licensed under Apache 2.0
+# Provided under the Apache 2.0 license
 
 import sys, datetime, os, random, json
 
@@ -149,7 +149,7 @@ class Games():
     def sort(self, rank):
         '''Returns game data sorted by matches played or alphabetically'''
         if rank: # Sort by number of matches
-            games = {k: v for k, v in sorted(self.data.items(), key=lambda item: item[1], reverse = True)}
+            games = {k: v for k, v in sorted(self.data.items(), key=lambda item: item[1]['match'], reverse = True)}
 
         else: # A-Z
             games = {k: v for k, v in sorted(self.data.items(), key=lambda item: item[0])}
@@ -207,7 +207,7 @@ class Games():
         if self.validate_name(name):
             print("\nAdd new game " + name + "?")
             if confirm():
-                self.data[name] = 0
+                self.data[name] = {"match": 0, "last": None}
                 print(name + " has been added to games library\n")
 
         else:
@@ -245,8 +245,8 @@ class Games():
         head = ["------------------------------", "-------"]
         print(" {: <31} {: <5}".format(*labels))
         print(" {: <31} {: <5}".format(*head))
-        for g, matches in ranks.items():
-            print(" {: <31} {: <5}".format(g, matches))
+        for g, stats in ranks.items():
+            print(" {: <31} {: <5}".format(g, stats['match']))
         print()
 
 
@@ -630,7 +630,8 @@ def update_data(fighters, games, match):
         fighters.data[p2]['game'][g] = [0,1]
 
     fighters.data[w]['game'][g][0] += 1
-    games.data[g] += 1
+    games.data[g]['match'] += 1
+    games.data[g]['last'] = today.strftime("%m/%d/%Y")
 
     write_fighters(fighters.data)
     write_games(games.data)

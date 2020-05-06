@@ -8,67 +8,74 @@ class PlayerIcons:
     def __init__(self, master, data):
         '''Contains all individual player buttons'''
         self.master = master
+        self.icons = {} # Dict of player buttons
+        self.avatars = {} # Dict of player avatars
+        self.avatars['default'] = tk.PhotoImage(master=self.master, file=os.path.join('img', 'avatars', 'default.png'))
+
         self.generate(data)
         self.position(master)
 
 
+    def add_icon(self, name):
+        '''Adds one icon to self.icons'''
+        useAvatar = False
+
+        if os.path.isfile(os.path.join('img', 'avatars', name +  '.png')):
+            avatar = tk.PhotoImage(master=self.master, file=os.path.join('img', 'avatars', name +  '.png'))
+            if avatar.width() == 100 and avatar.height() == 100: # Only accept 100x100px
+                self.avatars[name] = avatar
+                useAvatar = True
+
+        if useAvatar:
+            self.icons[name] = ttk.Button(self.master, text=name, image=self.avatars[name], compound=tk.TOP, width=10)
+        else:
+            self.icons[name] = ttk.Button(self.master, text=name, image=self.avatars['default'], compound=tk.TOP, width=10)
+
+
+    def remove_icon(self, name):
+        '''Removes a single icon'''
+        self.icons[name].grid_remove()
+        del self.icons[name]
+
+
     def generate(self, data):
-        '''Generates player icon buttons from data object'''
-        self.namelist = []
-        self.icons = []
-        self.avatars = []
-        self.avatars.append(tk.PhotoImage(master=self.master, file=os.path.join('img', 'avatars', 'default.png')))
-
+        '''Generates initial player icon buttons'''
         for name in data.players.all:
-            self.namelist.append(name)
-            if os.path.isfile(os.path.join('img', 'avatars', name +  '.png')):
-                avatar = tk.PhotoImage(master=self.master, file=os.path.join('img', 'avatars', name +  '.png'))
-
-                if avatar.width() == 100 and avatar.height() == 100: # Only accept 100x100px
-                    self.avatars.append(avatar)
-                    self.icons.append(ttk.Button(self.master, text=name, image=self.avatars[-1], compound=tk.TOP, width=10))
-
-                else:
-                    self.icons.append(ttk.Button(self.master, text=name, image=self.avatars[0], compound=tk.TOP, width=10))
-
-            else:
-                self.icons.append(ttk.Button(self.master, text=name, image=self.avatars[0], compound=tk.TOP, width=10))
+            self.add_icon(name)
 
 
     def position(self, master):
         '''Repositions all player buttons - can get slow with large rosters'''
-        col = master.winfo_width() // 110
-        c,r = 0,0
-        for t in self.icons:
-            t.grid(row=r, column=c)
-            c += 1
+        width = master.winfo_width() // 110
+        col,row = 0,0
+        for icon in self.icons.values():
+            icon.grid(row=row, column=col)
+            col += 1
 
-            if c >= col - 1:
-                r += 1
-                c = 0
+            # Advance row
+            if col >= width - 1:
+                row += 1
+                col = 0
+
+
+    def trim(self, data):
+        '''Removes all player icon buttons not in data.players.all'''
+        iconCopy = self.icons.copy()
+        for name in iconCopy:
+            if name not in data.players.all.keys():
+                self.remove_icon(name)
 
 
     def append(self, data):
-        '''Adds all pending icons to self.icons'''
+        '''Adds all pending icons to self.icons from data.players.all'''
         for name in data.players.all:
-            if name not in self.namelist:
-                self.namelist.append(name)
-                if os.path.isfile(os.path.join('img', 'avatars', name +  '.png')):
-                    avatar = tk.PhotoImage(master=self.master, file=os.path.join('img', 'avatars', name +  '.png'))
-
-                    if avatar.width() == 100 and avatar.height() == 100: # Only accept 100x100px
-                        self.avatars.append(avatar)
-                        self.icons.append(ttk.Button(self.master, text=name, image=self.avatars[-1], compound=tk.TOP, width=10))
-
-                    else:
-                        self.icons.append(ttk.Button(self.master, text=name, image=self.avatars[0], compound=tk.TOP, width=10))
-
-                else:
-                    self.icons.append(ttk.Button(self.master, text=name, image=self.avatars[0], compound=tk.TOP, width=10))
+            if name not in self.icons.keys():
+                self.add_icon(name)
 
 
     def refresh(self, data):
         '''Regenerates and repositions player icons'''
+        self.trim(data)
         self.append(data)
         self.position(self.master)
 
@@ -79,8 +86,8 @@ class Sidebar:
         '''Class containing the sidebar buttons for the main window'''
         self.runM = tk.Button(master, text="Run Match", width=11)
         self.runS = tk.Button(master, text="Run Set", width=11)
-        self.addF = tk.Button(master, text="Add Player", width=11, command=lambda m=master, d=data: menus.addP.open(m,d))
-        self.addG = tk.Button(master, text="Add Game", width=11, command=lambda m=master, d=data: menus.addG.open(m,d))
+        self.addP = tk.Button(master, text="Add Player", width=11, command=lambda m=master, d=data: menus.addPlayer.open(m,d))
+        self.addG = tk.Button(master, text="Add Game", width=11, command=lambda m=master, d=data: menus.addGame.open(m,d))
         self.refresh = tk.Button(master, text="Refresh", width=11, command=lambda d=data: icons.refresh(d))
         self.exit = tk.Button(master, text="Exit", width=11, command=sys.exit)
         self.position()
@@ -90,7 +97,7 @@ class Sidebar:
         '''Positions all sidebar buttons'''
         self.runM.pack(fill=tk.X)
         self.runS.pack(fill=tk.X)
-        self.addF.pack(fill=tk.X)
+        self.addP.pack(fill=tk.X)
         self.addG.pack(fill=tk.X)
 
         self.exit.pack(side=tk.BOTTOM, fill=tk.X)
@@ -104,20 +111,21 @@ class TopMenu:
         self.top = tk.Menu(master)
 
         self.file = tk.Menu(self.top, tearoff=0)
-        self.file.add_command(label="Save", command=print)
-        self.file.add_command(label="Refresh", command=print)
-        self.file.add_command(label="Import", command=print)
-        self.file.add_command(label="Export", command=print)
+        #self.file.add_command(label="Save", command=print)
+        self.file.add_command(label="Refresh", command=lambda d=data: icons.refresh(d))
+        self.file.add_command(label="Rebuild", command=print)
+        #self.file.add_separator()
+        #self.file.add_command(label="Import", command=print)
+        #self.file.add_command(label="Export", command=print)
         self.file.add_separator()
         self.file.add_command(label="Exit", command=sys.exit)
         self.top.add_cascade(label="File", menu=self.file)
 
         self.edit = tk.Menu(self.top, tearoff=0)
-        self.edit.add_command(label="Add Player", command=lambda m=master, d=data: menus.addP.open(m,d))
-        self.edit.add_command(label="Add Game", command=lambda m=master, d=data: menus.addG.open(m,d))
-        self.edit.add_separator()
-        self.edit.add_command(label="Remove Player", command=print)
-        self.edit.add_command(label="Remove Game", command=print)
+        self.edit.add_command(label="Add Player", command=lambda m=master, d=data: menus.addPlayer.open(m,d))
+        self.edit.add_command(label="Add Game", command=lambda m=master, d=data: menus.addGame.open(m,d))
+        self.edit.add_command(label="Remove Player", command=lambda m=master, d=data: menus.removePlayer.open(m,d))
+        self.edit.add_command(label="Remove Game", command=lambda m=master, d=data: menus.removeGame.open(m,d))
         self.top.add_cascade(label="Edit", menu=self.edit)
 
         self.run = tk.Menu(self.top, tearoff=0)
@@ -134,13 +142,15 @@ class TopMenu:
         self.show.add_radiobutton(label="Avatar")
         self.show.add_radiobutton(label="Name")
         self.show.add_radiobutton(label="Both")
+        self.view.add_command(label="Match Records", command=print)
         self.view.add_command(label="Game List", command=print)
         self.view.add_cascade(label="Arrange", menu=self.arrange)
-        self.view.add_cascade(label="Show", menu=self.show)
+        #self.view.add_cascade(label="Show", menu=self.show)
         self.view.add_checkbutton(label="Hide Sidebar")
         self.top.add_cascade(label="View", menu=self.view)
 
         self.help = tk.Menu(self.top, tearoff=0)
+        self.help.add_command(label="FAQ", command=print)
         self.help.add_command(label="About", command=print)
         self.top.add_cascade(label="Help", menu=self.help)
 
@@ -178,7 +188,7 @@ class Frames:
 
         # Bind scroll for Windows
         master.bind_all("<MouseWheel>", self.mouse_wheel)
-        # Bing scroll for Linux
+        # Bind scroll for Linux
         master.bind_all("<Button-4>", self.mouse_wheel)
         master.bind_all("<Button-5>", self.mouse_wheel)
 
@@ -195,8 +205,10 @@ class Frames:
 class Menus:
     def __init__(self):
         '''Class for holding pop-up menu objects'''
-        self.addP = AddPlayer()
-        self.addG = AddGame()
+        self.addPlayer = AddPlayer()
+        self.addGame = AddGame()
+        self.removePlayer = RemovePlayer()
+        self.removeGame = RemoveGame()
 
 
 
@@ -207,7 +219,7 @@ class Window:
         self.root.title("GrudgeMatch")
         self.root.resizable(True, True)
         self.root.bind('<Configure>', self.on_resize)
-        self.root.minsize(570,388)
+        self.root.minsize(570,390)
 
         self.data = data # Reference to data object
         self.menus = Menus() # Container for menu objects

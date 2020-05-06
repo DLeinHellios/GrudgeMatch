@@ -42,21 +42,14 @@ class Players:
 
     def invalidate_name(self, name):
         '''Returns a 0 for valid names, 1+ for error codes'''
-        reserved = [
-            '0','1','2','3','4','5','6','7','8','9',
-            'default', 'player', 'name', 'game'
-        ]
-
-        illegal = [
-            ',', '\\', '.', "/"
-        ]
-
+        reserved = ['0','1','2','3','4','5','6','7','8','9','default', 'player', 'name', 'game']
+        illegal = [',', '\\', '.', "/", "`", "~"]
         invalid = 0
 
         if name in self.all.keys():
             # Name in use
             invalid = 1
-        if name in reserved:
+        if name.lower() in reserved:
             # Name is on reserved list
             invalid = 2
         for i in illegal:
@@ -73,6 +66,11 @@ class Players:
     def add(self, name):
         '''Creates a new player entry'''
         self.all[name] = {"total": [0,0], "last": None, "game": {}}
+
+
+    def remove(self, name):
+        '''Removes a player entry'''
+        del self.all[name]
 
 
 
@@ -118,21 +116,14 @@ class Games:
 
     def invalidate_name(self, name):
         '''Returns a 0 for valid names, 1+ for error codes'''
-        reserved = [
-            '0','1','2','3','4','5','6','7','8','9',
-            'default', 'player', 'name', 'game'
-        ]
-
-        illegal = [
-            ',', '\\', '.', "/"
-        ]
-
+        reserved = ['0','1','2','3','4','5','6','7','8','9','default', 'player', 'name', 'game']
+        illegal = [',', '\\', '.', "/", "`", "~"]
         invalid = 0
 
         if name in self.all.keys():
             # Name in-use
             invalid = 1
-        if name in reserved:
+        if name.lower() in reserved:
             # Name is on reserved list
             invalid = 2
         for i in illegal:
@@ -149,6 +140,11 @@ class Games:
     def add(self, name):
         '''Creates a new game entry'''
         self.all[name] = {"match": 0, "last": None}
+
+
+    def remove(self, name):
+        '''Removes a game entry'''
+        del self.all[name]
 
 
 

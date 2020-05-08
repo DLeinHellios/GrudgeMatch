@@ -2,6 +2,7 @@ import tkinter as tk
 import tkinter.ttk as ttk
 import os, sys
 from src.edit import *
+from src.menus import *
 
 
 class PlayerIcons:
@@ -113,7 +114,7 @@ class TopMenu:
         self.file = tk.Menu(self.top, tearoff=0)
         #self.file.add_command(label="Save", command=print)
         self.file.add_command(label="Refresh", command=lambda d=data: icons.refresh(d))
-        self.file.add_command(label="Rebuild", command=print)
+        self.file.add_command(label="Rebuild", command=lambda m=master, d=data: menus.rebuildData.open(m,d))
         #self.file.add_separator()
         #self.file.add_command(label="Import", command=print)
         #self.file.add_command(label="Export", command=print)
@@ -126,6 +127,9 @@ class TopMenu:
         self.edit.add_command(label="Add Game", command=lambda m=master, d=data: menus.addGame.open(m,d))
         self.edit.add_command(label="Remove Player", command=lambda m=master, d=data: menus.removePlayer.open(m,d))
         self.edit.add_command(label="Remove Game", command=lambda m=master, d=data: menus.removeGame.open(m,d))
+        #self.edit.add_command(label="Merge Players", command=print)
+        #self.edit.add_command(label="Merge Games", command=print)
+
         self.top.add_cascade(label="Edit", menu=self.edit)
 
         self.run = tk.Menu(self.top, tearoff=0)
@@ -143,7 +147,7 @@ class TopMenu:
         self.show.add_radiobutton(label="Name")
         self.show.add_radiobutton(label="Both")
         self.view.add_command(label="Match Records", command=print)
-        self.view.add_command(label="Game List", command=print)
+        self.view.add_command(label="Game List", command=lambda p=data.games.all: print(p))
         self.view.add_cascade(label="Arrange", menu=self.arrange)
         #self.view.add_cascade(label="Show", menu=self.show)
         self.view.add_checkbutton(label="Hide Sidebar")
@@ -210,6 +214,8 @@ class Menus:
         self.removePlayer = RemovePlayer()
         self.removeGame = RemoveGame()
 
+        self.rebuildData = Rebuild()
+
 
 
 class Window:
@@ -236,7 +242,6 @@ class Window:
             icons = [tk.PhotoImage(master=self.root, file=iconfile)
                      for iconfile in iconfiles]
             self.root.wm_iconphoto(True, *icons)
-
 
         self.frames = Frames(self.root)
         self.icons = PlayerIcons(self.frames.scrollFrame, self.data)

@@ -3,13 +3,14 @@ import os, json, sys
 class Players:
     def __init__(self):
         '''Contains and manages all player entries'''
-        self.all = self.load() # Holds all player dicts
+        self.path = os.path.join('data', 'players.json')
+        self.load() # Holds all player dicts in self.all
 
 
     def create_blank_file(self):
         '''Creates blank player file, returns blank player dict'''
         blank = {"players":{}}
-        with open(os.path.join('data', 'players.json'), 'w', encoding='utf-8') as pFile:
+        with open(self.path, 'w', encoding='utf-8') as pFile:
             json.dump(blank, pFile, ensure_ascii=False, indent=2)
 
         return blank
@@ -17,9 +18,9 @@ class Players:
 
     def load(self):
         '''Loads players.json, returns main player data dictionary'''
-        if os.path.isfile(os.path.join('data', 'players.json')):
+        if os.path.isfile(self.path):
             try:
-                with open(os.path.join('data', 'players.json')) as pFile:
+                with open(self.path) as pFile:
                     all = json.load(pFile)
             except:
                 print("ERROR - Player data file unreadable, does it contain errors?")
@@ -30,34 +31,30 @@ class Players:
             # Create a blank player file
             all = self.create_blank_file()
 
-        return all['players']
+        self.all = all['players']
 
 
     def save(self):
         '''Writes to data/players.json'''
         data = {'players':self.all}
-        with open(os.path.join('data', 'players.json'), 'w', encoding='utf-8') as pFile:
+        with open(self.path, 'w', encoding='utf-8') as pFile:
             json.dump(data, pFile, ensure_ascii=False, indent=2)
 
 
     def invalidate_name(self, name):
         '''Returns a 0 for valid names, 1+ for error codes'''
-        reserved = ['0','1','2','3','4','5','6','7','8','9','default', 'player', 'name', 'game']
+        reserved = ['0','1','2','3','4','5','6','7','8','9','default', 'player', 'name', 'game','data']
         illegal = [',', '\\', '.', "/", "`", "~"]
         invalid = 0
 
-        if name in self.all.keys():
-            # Name in use
+        if name in self.all.keys(): # Name in use
             invalid = 1
-        if name.lower() in reserved:
-            # Name is on reserved list
+        if name.lower() in reserved: # Name is on reserved list
             invalid = 2
         for i in illegal:
-            if i in name:
-                # Name uses an illegal character
+            if i in name: # Name uses illegal character
                 invalid = 3
-        if len(name) > 14:
-            # Name is too long
+        if len(name) > 14: # Name is too long
             invalid = 4
 
         return invalid
@@ -73,17 +70,38 @@ class Players:
         del self.all[name]
 
 
+    def parse_match(self, match):
+        '''Parses a match record list and updates player entry'''
+        for name in [match[2],match[3]]:
+            if name not in self.all.keys():
+                self.add(name)
+
+            self.all[name]['total'][1] += 1
+            self.all[name]['last'] = match[0]
+
+            if match[1] not in self.all[name]['game'].keys():
+                self.all[name]['game'][match[1]] = [0,0]
+
+            self.all[name]['game'][match[1]][1] += 1
+
+
+        # Winner
+        self.all[match[4]]['total'][0] += 1
+        self.all[match[4]]['game'][match[1]][0] += 1
+
+
 
 class Games:
     def __init__(self):
         '''Contains and manages all game entries'''
-        self.all = self.load() # Holds all game dicts
+        self.path = os.path.join('data', 'games.json')
+        self.load() # Holds all game dicts in self.all
 
 
     def create_blank_file(self):
         '''Creates blank game file, returns blank player dict'''
         blank = {"games":{}}
-        with open(os.path.join('data', 'games.json'), 'w', encoding='utf-8') as gFile:
+        with open(os.path.join(self.path), 'w', encoding='utf-8') as gFile:
             json.dump(blank, gFile, ensure_ascii=False, indent=2)
 
         return blank
@@ -91,9 +109,9 @@ class Games:
 
     def load(self):
         '''Loads games.json, returns main games data dictionary'''
-        if os.path.isfile(os.path.join('data', 'games.json')):
+        if os.path.isfile(self.path):
             try:
-                with open(os.path.join('data', 'games.json')) as gFile:
+                with open(self.path) as gFile:
                     all = json.load(gFile)
             except:
                 print("ERROR - Game file unreadable, does it contain errors?")
@@ -104,34 +122,30 @@ class Games:
             # Create a blank player file
             all = self.create_blank_file()
 
-        return all['games']
+        self.all = all['games']
 
 
     def save(self):
         '''Writes to data/games.json'''
         data = {'games':self.all}
-        with open(os.path.join('data', 'games.json'), 'w', encoding='utf-8') as gFile:
+        with open(self.path, 'w', encoding='utf-8') as gFile:
             json.dump(data, gFile, ensure_ascii=False, indent=2)
 
 
     def invalidate_name(self, name):
         '''Returns a 0 for valid names, 1+ for error codes'''
-        reserved = ['0','1','2','3','4','5','6','7','8','9','default', 'player', 'name', 'game']
+        reserved = ['0','1','2','3','4','5','6','7','8','9','default', 'player', 'name', 'game','date']
         illegal = [',', '\\', '.', "/", "`", "~"]
         invalid = 0
 
-        if name in self.all.keys():
-            # Name in-use
+        if name in self.all.keys(): # Name in-use
             invalid = 1
-        if name.lower() in reserved:
-            # Name is on reserved list
+        if name.lower() in reserved: # Name is on reserved list
             invalid = 2
         for i in illegal:
-            if i in name:
-                # Name uses an illegal character
+            if i in name: # Name uses an illegal character
                 invalid = 3
-        if len(name) > 30:
-            # Name is too long
+        if len(name) > 30: # Name is too long
             invalid = 4
 
         return invalid
@@ -147,18 +161,87 @@ class Games:
         del self.all[name]
 
 
+    def parse_match(self, match):
+        '''Parses match record list and updates game entry'''
+        if match[1] not in self.all.keys():
+            self.add(match[1])
+
+        self.all[match[1]]['match'] += 1
+        self.all[match[1]]['last'] = match[0]
+
+
+
+class Records:
+    def __init__(self):
+        self.path = os.path.join('data','records.csv')
+
+
+    def write(self, match):
+        '''Writes a match record to records.csv'''
+        if not os.path.isfile(self.path):
+            with open(os.path.join('data', 'records.csv'), 'a') as rFile:
+                rFile.write('date,game,p1,p2,win\n')
+                record = ",".join(match) + "\n"
+                rFile.write(record)
+
+        else:
+            record = ",".join(match) + "\n"
+            with open(os.path.join('data', 'records.csv'), 'a') as rFile:
+                rFile.write(record)
+
+
+    def purge_player(self, name):
+        pass
+
+
+    def purge_game(self, name):
+        pass
+
+
+    def format(self, record):
+        '''Accepts match string from records.csv, converts to list of values'''
+        match = record.split(',')
+        match[-1] = match[-1][0:-1] # Remove new-line character
+
+        return match
+
+
 
 class Data:
     def __init__(self):
         #self.config = Config()
         self.players = Players()
         self.games = Games()
-        #self.records = Records()
+        self.records = Records()
 
 
     def save_all(self):
         #self.config.save()
-        #self.players.save()
-        #self.games.save()
+        self.players.save()
+        self.games.save()
 
-        pass
+
+    def rebuild(self):
+        '''Rebuilds players.json and games.json by parsing all records'''
+        try:
+            with open(self.records.path, 'r') as rFile:
+                self.players.all = {}
+                self.games.all = {}
+
+                for line in rFile:
+                    if line == 'date,game,p1,p2,win\n':
+                        continue
+
+                    match = self.records.format(line)
+                    self.games.parse_match(match)
+                    self.players.parse_match(match)
+
+            self.save_all()
+
+            return 0 # No error
+
+        except FileNotFoundError:
+            return 1 # No records.csv
+
+        except:
+            return 2 # General error

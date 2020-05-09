@@ -38,7 +38,7 @@ class AddPlayer:
         '''Conducts the action of the "Add" button'''
         name = self.entry.get()
         inv = data.players.invalidate_name(name)
-        self.top.unbind('Return') # TODO - better solution for Windows not focusing pop-up
+        self.top.unbind('<Return>') # TODO - better solution for Windows not focusing pop-up
 
         if name == '': # No name entered
             pass
@@ -105,7 +105,7 @@ class AddGame:
         '''Conducts the action of the "Add" button'''
         name = self.entry.get()
         inv = data.games.invalidate_name(name)
-        self.top.unbind('Return') # TODO - better solution for Windows not focusing pop-up
+        self.top.unbind('<Return>') # TODO - better solution for Windows not focusing pop-up
 
         if name == '': # No name entered
             pass

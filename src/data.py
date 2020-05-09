@@ -215,17 +215,54 @@ class Records:
         return match
 
 
+class Config:
+    def __init__(self):
+        self.path = os.path.join('data', 'config.json')
+        self.load()
+
+
+    def create_default_file(self):
+        '''Creates the default config file is config is missing or damaged'''
+        default = {"config":{
+            "hide_sidebar": False,
+        }}
+
+        with open(os.path.join(self.path), 'w', encoding='utf-8') as cFile:
+            json.dump(default, cFile, ensure_ascii=False, indent=2)
+
+        return default
+
+
+    def load(self):
+        '''Loads games.json, returns main games data dictionary'''
+        try:
+            with open(self.path) as cFile:
+                all = json.load(cFile)
+
+        except:
+            # Create a blank player file
+            all = self.create_default_file()
+
+        self.all = all['config']
+
+
+    def save(self):
+        '''Saves config data to data/config.json'''
+        data = {'config':self.all}
+        with open(self.path, 'w', encoding='utf-8') as cFile:
+            json.dump(data, cFile, ensure_ascii=False, indent=2)
+
+
 
 class Data:
     def __init__(self):
-        #self.config = Config()
+        self.config = Config()
         self.players = Players()
         self.games = Games()
         self.records = Records()
 
 
     def save_all(self):
-        #self.config.save()
         self.players.save()
         self.games.save()
 

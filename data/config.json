@@ -1,5 +1,5 @@
 {
   "config": {
-	  "Config for GUI goes here": true
+    "hide_sidebar": false
   }
 }

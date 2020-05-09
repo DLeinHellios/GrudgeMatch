@@ -70,24 +70,33 @@ class Players:
         del self.all[name]
 
 
+    def add_match(self, name, game, date):
+        '''Adds a single match to a player entry'''
+        if name not in self.all.keys(): # Add entry if not present
+            self.add(name)
+
+        self.all[name]['total'][1] += 1
+        self.all[name]['last'] = date # TODO - add a check for more recent date
+
+        if game not in self.all[name]['game'].keys(): # Add game if first match
+            self.all[name]['game'][game] = [0,0]
+
+        self.all[name]['game'][game][1] += 1
+
+
+    def add_win(self, name, game):
+        '''Adds a win to a player entry'''
+        # Always call after add_match()!
+        self.all[name]['total'][0] += 1
+        self.all[name]['game'][game][0] += 1
+
+
     def parse_match(self, match):
         '''Parses a match record list and updates player entry'''
         for name in [match[2],match[3]]:
-            if name not in self.all.keys():
-                self.add(name)
+            self.add_match(name, match[1], match[0])
 
-            self.all[name]['total'][1] += 1
-            self.all[name]['last'] = match[0]
-
-            if match[1] not in self.all[name]['game'].keys():
-                self.all[name]['game'][match[1]] = [0,0]
-
-            self.all[name]['game'][match[1]][1] += 1
-
-
-        # Winner
-        self.all[match[4]]['total'][0] += 1
-        self.all[match[4]]['game'][match[1]][0] += 1
+        self.add_win(match[4], match[1])
 
 
 

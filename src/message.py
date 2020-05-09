@@ -22,7 +22,7 @@ class Success:
     def position(self):
         ''''Positions text and ok button'''
         self.text.pack(padx=12, pady=6)
-        self.ok.pack()
+        self.ok.pack(pady=6)
 
 
     def close(self, master):
@@ -50,4 +50,4 @@ class Failure:
     def position(self):
         ''''Positions text and ok button'''
         self.text.pack(padx=12, pady=6)
-        self.ok.pack()
+        self.ok.pack(pady=6)

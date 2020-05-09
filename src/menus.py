@@ -27,10 +27,10 @@ class Rebuild:
 
     def position(self):
         '''Positions window elements'''
-        self.title.pack()
+        self.title.pack(pady=2)
         self.text.pack(padx=12)
-        self.cancel.pack(side=tk.RIGHT)
-        self.confirm.pack(side=tk.RIGHT)
+        self.cancel.pack(side=tk.RIGHT, padx=4, pady=4)
+        self.confirm.pack(side=tk.RIGHT, pady=4)
 
 
     def action(self, data):
@@ -47,4 +47,4 @@ class Rebuild:
 
         else:
             msg = "An error occured while rebuilding"
-            self.message=Failure(self.top, msg)
+            self.message = Failure(self.top, msg)

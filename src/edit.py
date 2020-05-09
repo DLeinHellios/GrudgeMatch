@@ -28,16 +28,17 @@ class AddPlayer:
 
     def position(self):
         '''Positions window elements'''
-        self.prompt.grid(row=2, column=1, padx=4, sticky=tk.W)
+        self.prompt.grid(row=2, column=1, padx=4, pady=4, sticky=tk.W)
         self.entry.grid(row=2, column=2, columnspan=2, pady=4, sticky=tk.W)
-        self.add.grid(row=3, column=2)
-        self.cancel.grid(row=3, column=3)
+        self.add.grid(row=3, column=2, pady=4)
+        self.cancel.grid(row=3, column=3, padx=4, pady=4)
 
 
     def action(self, data):
         '''Conducts the action of the "Add" button'''
         name = self.entry.get()
         inv = data.players.invalidate_name(name)
+        self.top.unbind('Return') # TODO - better solution for Windows not focusing pop-up
 
         if name == '': # No name entered
             pass
@@ -93,16 +94,18 @@ class AddGame:
 
     def position(self):
         '''Positions window elements'''
-        self.prompt.grid(row=2, column=1, padx=4, sticky=tk.W)
+        self.prompt.grid(row=2, column=1, padx=4, pady=4, sticky=tk.W)
         self.entry.grid(row=2, column=2, columnspan=2, pady=4, sticky=tk.W)
-        self.add.grid(row=3, column=2)
-        self.cancel.grid(row=3, column=3)
+        self.add.grid(row=3, column=2, pady=4)
+        self.cancel.grid(row=3, column=3, padx=4, pady=4)
+
 
 
     def action(self, data):
         '''Conducts the action of the "Add" button'''
         name = self.entry.get()
         inv = data.games.invalidate_name(name)
+        self.top.unbind('Return') # TODO - better solution for Windows not focusing pop-up
 
         if name == '': # No name entered
             pass
@@ -154,7 +157,6 @@ class RemovePlayer:
             self.rm = tk.Button(self.top, text="Remove", width=8, command= lambda d=data: self.action(d))
             self.cancel = tk.Button(self.top, text="Cancel", width=8, command=self.top.destroy)
 
-            self.top.bind('<Return>', lambda x=0:self.rm.invoke())
             self.top.bind('<Escape>', lambda x=0:self.cancel.invoke())
 
             self.position()
@@ -165,8 +167,8 @@ class RemovePlayer:
         '''Positions window elements'''
         self.prompt.grid(row=2, column=1, padx=4, sticky=tk.W)
         self.select.grid(row=2, column=2, columnspan=2, pady=4, sticky=tk.W + tk.E)
-        self.rm.grid(row=3, column=2)
-        self.cancel.grid(row=3, column=3)
+        self.rm.grid(row=3, column=2, pady=4)
+        self.cancel.grid(row=3, column=3, padx=4, pady=4)
 
 
     def action(self, data):
@@ -207,7 +209,6 @@ class RemoveGame:
             self.rm = tk.Button(self.top, text="Remove", width=8, command= lambda d=data: self.action(d))
             self.cancel = tk.Button(self.top, text="Cancel", width=8, command=self.top.destroy)
 
-            self.top.bind('<Return>', lambda x=0:self.rm.invoke())
             self.top.bind('<Escape>', lambda x=0:self.cancel.invoke())
 
             self.position()
@@ -218,8 +219,8 @@ class RemoveGame:
         '''Positions window elements'''
         self.prompt.grid(row=2, column=1, padx=4, sticky=tk.W)
         self.select.grid(row=2, column=2, columnspan=2, pady=4, sticky=tk.W + tk.E)
-        self.rm.grid(row=3, column=2)
-        self.cancel.grid(row=3, column=3)
+        self.rm.grid(row=3, column=2, pady=4)
+        self.cancel.grid(row=3, column=3, padx=4, pady=4)
 
 
     def action(self, data):

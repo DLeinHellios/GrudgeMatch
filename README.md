@@ -1,7 +1,8 @@
-# GrudgeMatch
+![GrudgeMatch](img/logo_full.png?raw=true)
 
 ## Description
-GrudgeMatch is a free tool for simple fighting game record-keeping, written in Python. CLI version contains most basic features. GUI version in development and not functional.
+GrudgeMatch is a (soon-to-be) versatile record-keeper for competitive two-player games. Built with fighting games in mind, the goal of this project is to provide simple, extensible recordkeeping that can be later utilized and showcased in a variety of competitive settings. It is written in Python and Tkinter, and should work on a default Python 3+ installation on Windows and Linux. GrudgeMatch is provided under the Apache License 2.0.
 
-## Usage (CLI version only)
-Run __gm-cli.py__  -> add two fighters with `add fighter <name>` -> add a game with `add game <name>` -> start a match with `match` or `m`
+*GrudgeMatch is still in development, and is not feature-complete.*
+
+

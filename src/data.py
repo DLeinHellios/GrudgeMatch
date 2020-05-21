@@ -43,7 +43,7 @@ class Players:
 
     def invalidate_name(self, name):
         '''Returns a 0 for valid names, 1+ for error codes'''
-        reserved = ['0','1','2','3','4','5','6','7','8','9','default', 'player', 'name', 'game','data']
+        reserved = ['0','1','2','3','4','5','6','7','8','9','default','player','name','game','data']
         illegal = [',', '\\', '.', "/", "`", "~"]
         invalid = 0
 
@@ -54,7 +54,7 @@ class Players:
         for i in illegal:
             if i in name: # Name uses illegal character
                 invalid = 3
-        if len(name) > 14: # Name is too long
+        if len(name) > 10: # Name is too long
             invalid = 4
 
         return invalid
@@ -143,7 +143,7 @@ class Games:
 
     def invalidate_name(self, name):
         '''Returns a 0 for valid names, 1+ for error codes'''
-        reserved = ['0','1','2','3','4','5','6','7','8','9','default', 'player', 'name', 'game','date']
+        reserved = ['0','1','2','3','4','5','6','7','8','9','default','player','name','game','date']
         illegal = [',', '\\', '.', "/", "`", "~"]
         invalid = 0
 
@@ -182,6 +182,7 @@ class Games:
 
 class Records:
     def __init__(self):
+        '''Match records management object'''
         self.path = os.path.join('data','records.csv')
 
 
@@ -200,11 +201,13 @@ class Records:
 
 
     def purge_player(self, name):
-        pass
+        '''Removes records of a specified player'''
+        pass # TODO
 
 
     def purge_game(self, name):
-        pass
+        '''Removes records of a specified game'''
+        pass # TODO
 
 
     def format(self, record):
@@ -215,8 +218,10 @@ class Records:
         return match
 
 
+
 class Config:
     def __init__(self):
+        '''Holds configuration options'''
         self.path = os.path.join('data', 'config.json')
         self.load()
 
@@ -256,6 +261,7 @@ class Config:
 
 class Data:
     def __init__(self):
+        '''Top-level data management object, holds data on players, games, tags, config, and records'''
         self.config = Config()
         self.players = Players()
         self.games = Games()
@@ -263,8 +269,17 @@ class Data:
 
 
     def save_all(self):
+        '''Saves players and games'''
         self.players.save()
         self.games.save()
+
+
+    def record_match(self, match):
+        '''Accepts match list and adds to records, players, and games'''
+        self.records.write(match)
+        self.games.parse_match(match)
+        self.players.parse_match(match)
+        self.save_all()
 
 
     def rebuild(self):

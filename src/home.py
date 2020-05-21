@@ -2,7 +2,7 @@ import tkinter as tk
 import tkinter.ttk as ttk
 import os, sys
 from src.edit import *
-from src.menus import *
+from src.match import *
 
 
 class PlayerIcons:
@@ -90,19 +90,23 @@ class PlayerIcons:
 class Sidebar:
     def __init__(self, master, data, menus, icons):
         '''Class containing the sidebar buttons for the main window'''
-        self.runM = tk.Button(master, text="Run Match")
-        self.runS = tk.Button(master, text="Run Set")
-        self.addP = tk.Button(master, text="Add Player", command=lambda m=master, d=data: menus.addPlayer.open(m,d))
-        self.addG = tk.Button(master, text="Add Game", command=lambda m=master, d=data: menus.addGame.open(m,d))
+        self.runM = tk.Button(master, text="Run Match", command=lambda m=master,d=data,me=menus: menus.matchSetup.open(m,d,me))
+        self.gamelist = tk.Button(master, text="Game List")
+        self.records = tk.Button(master, text="Match Records")
+        self.addP = tk.Button(master, text="Add Player", command=lambda m=master,d=data: menus.addPlayer.open(m,d))
+        self.addG = tk.Button(master, text="Add Game", command=lambda m=master,d=data: menus.addGame.open(m,d))
         self.refresh = tk.Button(master, text="Refresh", command=lambda d=data: icons.refresh(d))
         self.exit = tk.Button(master, text="Exit", command=sys.exit)
+        self.separator = ttk.Separator(master, orient=tk.HORIZONTAL)
         self.position()
 
 
     def position(self):
         '''Positions all sidebar buttons'''
         self.runM.pack(fill=tk.X)
-        self.runS.pack(fill=tk.X)
+        self.gamelist.pack(fill=tk.X)
+        self.records.pack(fill=tk.X)
+        self.separator.pack(fill=tk.X, padx=6, pady=4)
         self.addP.pack(fill=tk.X)
         self.addG.pack(fill=tk.X)
 
@@ -132,15 +136,15 @@ class TopMenu:
         self.edit.add_command(label="Add Game", command=lambda m=master, d=data: menus.addGame.open(m,d))
         self.edit.add_command(label="Remove Player", command=lambda m=master, d=data: menus.removePlayer.open(m,d))
         self.edit.add_command(label="Remove Game", command=lambda m=master, d=data: menus.removeGame.open(m,d))
-        #self.edit.add_command(label="Merge Players", command=print)
-        #self.edit.add_command(label="Merge Games", command=print)
+        #self.edit.add_command(label="Manage Players", command=print)
+        #self.edit.add_command(label="Manage Games", command=print)
+        #self.edit.add_command(label="Manage Tags", command=print)
 
         self.top.add_cascade(label="Edit", menu=self.edit)
 
         self.run = tk.Menu(self.top, tearoff=0)
         self.run.add_command(label="Run Match", command=print)
-        self.run.add_command(label="Run Set", command=print)
-        #self.run.add_command(label="Seed Bracket", command=print)
+        #self.run.add_command(label="Run Tournament", command=print)
         self.top.add_cascade(label="Run", menu=self.run)
 
         self.view = tk.Menu(self.top, tearoff=0)
@@ -148,14 +152,9 @@ class TopMenu:
         self.arrange.add_radiobutton(label="A-Z")
         self.arrange.add_radiobutton(label="Matches")
         self.arrange.add_radiobutton(label="Recent")
-        self.show = tk.Menu(self.top, tearoff=0)
-        self.show.add_radiobutton(label="Avatar")
-        self.show.add_radiobutton(label="Name")
-        self.show.add_radiobutton(label="Both")
         self.view.add_command(label="Match Records", command=print)
         self.view.add_command(label="Game List", command=lambda p=data.games.all: print(p))
-        self.view.add_cascade(label="Arrange", menu=self.arrange)
-        #self.view.add_cascade(label="Show", menu=self.show)
+        #self.view.add_cascade(label="Arrange", menu=self.arrange)
         self.view.add_command(label="Toggle Sidebar", command=lambda d=data: frames.toggle_sidebar(d))
         self.top.add_cascade(label="View", menu=self.view)
 
@@ -238,11 +237,14 @@ class Menus:
 
         self.rebuildData = Rebuild()
 
+        self.matchSetup = MatchSetup()
+        self.matchResults = MatchResults()
+
 
 
 class Window:
     def __init__(self, data):
-        '''Class contianing the Tk root window and that handles it's maintenance'''
+        '''Main UI object - contains all UI elements and root Tk window'''
         self.root = tk.Tk()
         self.root.title("GrudgeMatch")
         self.root.resizable(True, True)

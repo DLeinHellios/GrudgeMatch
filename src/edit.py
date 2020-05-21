@@ -62,7 +62,7 @@ class AddPlayer:
             self.message = Failure(self.top, msg)
 
         elif inv == 4: # Name greater than 14 characters
-            msg = 'Name "{}" is too long. Max = 14 characters'.format(name)
+            msg = 'Name "{}" is too long. Max = 10 characters'.format(name)
             self.message = Failure(self.top, msg)
 
         else:
@@ -92,13 +92,13 @@ class AddGame:
         self.top.grab_set()
         self.entry.focus()
 
+
     def position(self):
         '''Positions window elements'''
         self.prompt.grid(row=2, column=1, padx=4, pady=4, sticky=tk.W)
         self.entry.grid(row=2, column=2, columnspan=2, pady=4, sticky=tk.W)
         self.add.grid(row=3, column=2, pady=4)
         self.cancel.grid(row=3, column=3, padx=4, pady=4)
-
 
 
     def action(self, data):

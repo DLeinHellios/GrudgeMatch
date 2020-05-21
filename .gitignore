@@ -5,6 +5,7 @@ data/*
 # Player avatars except default
 img/avatars/*
 !img/avatars/default.png
+!img/avatars/0.png
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

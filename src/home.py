@@ -91,10 +91,10 @@ class Sidebar:
     def __init__(self, master, data, menus, icons):
         '''Class containing the sidebar buttons for the main window'''
         self.runM = tk.Button(master, text="Run Match", command=lambda m=master,d=data,me=menus: menus.matchSetup.open(m,d,me))
-        self.gamelist = tk.Button(master, text="Game List")
-        self.records = tk.Button(master, text="Match Records")
+        self.records = tk.Button(master, text="Match Records", command=lambda m=master, d=data: menus.matchRecords.open(m,d))
         self.addP = tk.Button(master, text="Add Player", command=lambda m=master,d=data: menus.addPlayer.open(m,d))
         self.addG = tk.Button(master, text="Add Game", command=lambda m=master,d=data: menus.addGame.open(m,d))
+        self.manT = tk.Button(master, text="Manage Tags", command=lambda m=master,d=data: menus.addGame.open(m,d))
         self.refresh = tk.Button(master, text="Refresh", command=lambda d=data: icons.refresh(d))
         self.exit = tk.Button(master, text="Exit", command=sys.exit)
         self.separator = ttk.Separator(master, orient=tk.HORIZONTAL)
@@ -104,11 +104,11 @@ class Sidebar:
     def position(self):
         '''Positions all sidebar buttons'''
         self.runM.pack(fill=tk.X)
-        self.gamelist.pack(fill=tk.X)
         self.records.pack(fill=tk.X)
         self.separator.pack(fill=tk.X, padx=6, pady=4)
         self.addP.pack(fill=tk.X)
         self.addG.pack(fill=tk.X)
+        #self.manT.pack(fill=tk.X)
 
         self.exit.pack(side=tk.BOTTOM, fill=tk.X)
         self.refresh.pack(side=tk.BOTTOM, fill=tk.X)
@@ -152,8 +152,7 @@ class TopMenu:
         self.arrange.add_radiobutton(label="A-Z")
         self.arrange.add_radiobutton(label="Matches")
         self.arrange.add_radiobutton(label="Recent")
-        self.view.add_command(label="Match Records", command=print)
-        self.view.add_command(label="Game List", command=lambda p=data.games.all: print(p))
+        self.view.add_command(label="Match Records", command=lambda m=master, d=data: menus.matchRecords.open(m,d))
         #self.view.add_cascade(label="Arrange", menu=self.arrange)
         self.view.add_command(label="Toggle Sidebar", command=lambda d=data: frames.toggle_sidebar(d))
         self.top.add_cascade(label="View", menu=self.view)
@@ -235,10 +234,14 @@ class Menus:
         self.removePlayer = RemovePlayer()
         self.removeGame = RemoveGame()
 
+        self.manageTags = ManageTags()
+
         self.rebuildData = Rebuild()
 
         self.matchSetup = MatchSetup()
         self.matchResults = MatchResults()
+
+        self.matchRecords = MatchRecords()
 
 
 

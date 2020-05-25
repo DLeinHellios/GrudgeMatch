@@ -239,3 +239,12 @@ class RemoveGame:
         else:
             msg = "Error removing game"
             self.message = Failure(self.top, msg)
+
+
+
+class ManageTags:
+    def open(self, master, data):
+        self.top = tk.Toplevel(master)
+        self.top.title("Manage Tags")
+        self.top.resizable(False,False)
+        self.top.wm_attributes("-topmost", True)

@@ -29,6 +29,8 @@ class MatchResults:
         self.submit = tk.Button(self.buttonFrame, text="Submit", width=8, state=tk.DISABLED, command=lambda d=data,s=setup: self.submit_confirm(d,s))
         self.cancel = tk.Button(self.buttonFrame, text="Cancel", width=8, command=lambda s=setup: self.cancel_match(s))
 
+        self.top.bind('<Return>', lambda x=0:self.add.invoke())
+
         self.position()
         self.top.grab_set()
 
@@ -126,8 +128,6 @@ class MatchAddEntry:
         self.add = tk.Button(self.buttonFrame, text="Add", width=6, command=lambda m=master, d=data, a=additions: self.action(m,d,a))
         self.cancel = tk.Button(self.buttonFrame, text="Cancel", width=6, command=lambda m=master: self.close(m))
 
-        self.top.bind('<Return>', lambda x=0:self.add.invoke())
-
         self.position()
         self.top.grab_set()
 
@@ -204,9 +204,9 @@ class MatchSetup:
             self.selectP1 = ttk.Combobox(self.playerFrame, width=14, textvariable=self.p1)
             self.selectP2 = ttk.Combobox(self.playerFrame, width=14, textvariable=self.p2)
 
-            self.selectGame['values'] = list(data.games.all.keys())
-            self.selectP1['values'] = list(data.players.all.keys())
-            self.selectP2['values'] = list(data.players.all.keys())
+            self.selectGame['values'] = sorted(list(data.games.all.keys()))
+            self.selectP1['values'] = sorted(list(data.players.all.keys()))
+            self.selectP2['values'] = sorted(list(data.players.all.keys()))
 
             self.labelGame = tk.Label(self.gameFrame, text="Game:")
             self.labelP1 = tk.Label(self.playerFrame, text="Player 1:")
@@ -326,3 +326,79 @@ class MatchSetup:
             match = [self.game.get(),self.p1.get(),self.p2.get()]
             menu.matchResults.open(master, data, match, self.top)
             self.top.withdraw()
+
+
+
+class MatchRecords:
+    def open(self, master, data):
+        '''Match records display window'''
+        self.top = tk.Toplevel(master)
+        self.top.title("Match Records")
+        self.top.wm_attributes("-topmost", True)
+
+        self.mainFrame = tk.Frame(self.top)
+        self.records = data.records.read()
+        self.tree = self.build_tree(self.mainFrame, data)
+        self.scrollbar = ttk.Scrollbar(self.mainFrame, orient="vertical", command=self.tree.yview)
+        self.tree.configure(yscrollcommand=self.scrollbar.set)
+
+        self.exit = tk.Button(self.top, width=8, text="Exit", command=self.top.destroy)
+
+        self.position()
+
+
+    def build_gamedict(self, records):
+        '''Builds a list of games for record categories'''
+        gamedict = {}
+        for r in records:
+            if r[1] not in gamedict.keys():
+                gamedict[r[1]] = 0
+
+        # Sort alphabetically by game
+        gamedict = {k: v for k, v in sorted(gamedict.items(), key=lambda item: item[0], reverse=True)}
+
+        return gamedict
+
+
+    def build_tree(self, master, data):
+        '''Builds treeview widget'''
+        tree = ttk.Treeview(master)
+        tree['columns'] = ('d','g','p1','p2','w')
+        tree['displaycolumns'] = ('d','p1','p2','w')
+
+        tree.tag_configure('g', background='light gray')
+        tree.tag_configure('0', background='#E8E8E8')
+        tree.tag_configure('1', background='#DFDFDF')
+
+        tree.column('#0',width=150,minwidth=25)
+        tree.column('d', width=100,minwidth=25)
+        tree.column('g', width=200,minwidth=25)
+        tree.column('p1',width=100,minwidth=25)
+        tree.column('p2',width=100,minwidth=25)
+        tree.column('w',width=100,minwidth=25)
+
+        tree.heading('#0', text='Game', anchor=tk.W)
+        tree.heading('d', text="Date",anchor=tk.W)
+        tree.heading('g', text="Game",anchor=tk.W)
+        tree.heading('p1', text="P1",anchor=tk.W)
+        tree.heading('p2', text="P2",anchor=tk.W)
+        tree.heading('w', text="Winner",anchor=tk.W)
+
+        gamedict = self.build_gamedict(self.records)
+        gamefolders = {}
+        for g in gamedict.keys():
+            gamefolders[g] = tree.insert('',-1,text=g,tag='g')
+
+        for r in self.records:
+            tree.insert(gamefolders[r[1]],-1,text=str(gamedict[r[1]]).zfill(3),values=r, tag=str(gamedict[r[1]]%2))
+            gamedict[r[1]] += 1
+
+        return tree
+
+
+    def position(self):
+        '''Positions window elements'''
+        self.mainFrame.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+        self.tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        self.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        self.exit.pack(side=tk.RIGHT, padx=4, pady=4)

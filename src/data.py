@@ -218,6 +218,23 @@ class Records:
         return match
 
 
+    def read(self):
+        '''Reads the records file and returns a list of records, each containing a list of strings'''
+        records = []
+
+        try:
+            with open(os.path.join('data', 'records.csv')) as rFile:
+                for r in rFile:
+                    records.append(self.format(r))
+
+            del records[0]
+
+        except:
+            records = []
+
+        return records
+
+
 
 class Config:
     def __init__(self):

@@ -2,7 +2,7 @@
 # gm.py - GrudgeMatch: record-keeping for fighting game rivalries
 # Just a demonstration GUI, nothing works yet
 
-# Copyright 2020 Dylan Lein-Hellios
+# Copyright 2020 DLeinHellios
 # Logo by ZN
 # Provided under the Apache License 2.0
 

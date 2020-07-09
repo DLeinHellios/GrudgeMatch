@@ -5,9 +5,9 @@ import os, datetime
 
 
 class MatchResults:
-    def open(self, master, data, match, setup):
+    def open(self, root, data, match, setup):
         '''Selects the winner of the match and submits the results'''
-        self.top = tk.Toplevel(master)
+        self.top = tk.Toplevel(root)
         self.top.title("Ongoing Match")
         self.top.resizable(False,False)
         self.top.wm_attributes("-topmost", True)
@@ -28,8 +28,6 @@ class MatchResults:
         self.buttonFrame = tk.Frame(self.top)
         self.submit = tk.Button(self.buttonFrame, text="Submit", width=8, state=tk.DISABLED, command=lambda d=data,s=setup: self.submit_confirm(d,s))
         self.cancel = tk.Button(self.buttonFrame, text="Cancel", width=8, command=lambda s=setup: self.cancel_match(s))
-
-        self.top.bind('<Return>', lambda x=0:self.add.invoke())
 
         self.position()
         self.top.grab_set()
@@ -112,9 +110,9 @@ class MatchResults:
 
 
 class MatchAddEntry:
-    def __init__(self, master, data, additions):
+    def __init__(self, root, data, additions):
         '''Window for quickly adding missing entries from match setup dialog'''
-        self.top = tk.Toplevel(master)
+        self.top = tk.Toplevel(root)
         self.top.title("Missing Entries")
         self.top.resizable(False,False)
         self.top.wm_attributes("-topmost", True)
@@ -125,8 +123,8 @@ class MatchAddEntry:
         self.body = tk.Label(self.textFrame, text=msg, justify=tk.LEFT, font="-size 8")
 
         self.buttonFrame = tk.Frame(self.top)
-        self.add = tk.Button(self.buttonFrame, text="Add", width=6, command=lambda m=master, d=data, a=additions: self.action(m,d,a))
-        self.cancel = tk.Button(self.buttonFrame, text="Cancel", width=6, command=lambda m=master: self.close(m))
+        self.add = tk.Button(self.buttonFrame, text="Add", width=6, command=lambda m=root, d=data, a=additions: self.action(m,d,a))
+        self.cancel = tk.Button(self.buttonFrame, text="Cancel", width=6, command=lambda m=root: self.close(m))
 
         self.position()
         self.top.grab_set()
@@ -157,7 +155,7 @@ class MatchAddEntry:
         self.buttonFrame.pack()
 
 
-    def action(self, master, data, additions):
+    def action(self, root, data, additions):
         '''Adds missing entries and begins match'''
         for key, value in additions.items():
             if key == 'g':
@@ -167,23 +165,23 @@ class MatchAddEntry:
 
         data.save_all()
         self.top.destroy()
-        master.deiconify()
-        master.grab_set()
+        root.deiconify()
+        root.grab_set()
 
 
-    def close(self, master):
+    def close(self, root):
         '''Destroys self.top and refocuses on MatchSetup'''
         self.top.destroy()
-        master.deiconify()
-        master.grab_set()
+        root.deiconify()
+        root.grab_set()
 
 
 
 class MatchSetup:
-    def open(self, master, data, menu):
+    def open(self, root, data, menu):
         '''Match setup window'''
         if len(data.players.all) > 1 and len(data.games.all) > 0:
-            self.top = tk.Toplevel(master)
+            self.top = tk.Toplevel(root)
             self.top.title("Match Setup")
             self.top.resizable(False,False)
             self.top.wm_attributes("-topmost", True)
@@ -205,8 +203,8 @@ class MatchSetup:
             self.selectP2 = ttk.Combobox(self.playerFrame, width=14, textvariable=self.p2)
 
             self.selectGame['values'] = sorted(list(data.games.all.keys()))
-            self.selectP1['values'] = sorted(list(data.players.all.keys()))
-            self.selectP2['values'] = sorted(list(data.players.all.keys()))
+            self.selectP1['values'] = list(data.players.all.keys())
+            self.selectP2['values'] = list(data.players.all.keys())
 
             self.labelGame = tk.Label(self.gameFrame, text="Game:")
             self.labelP1 = tk.Label(self.playerFrame, text="Player 1:")
@@ -218,7 +216,7 @@ class MatchSetup:
             self.separator=ttk.Separator(self.top, orient=tk.HORIZONTAL)
 
             self.buttonFrame = tk.Frame(self.top)
-            self.start = tk.Button(self.buttonFrame, text="Start", width=8, state=tk.DISABLED, command=lambda  m=master,d=data,me=menu: self.action(m,d,me))
+            self.start = tk.Button(self.buttonFrame, text="Start", width=8, state=tk.DISABLED, command=lambda  m=root,d=data,me=menu: self.action(m,d,me))
             self.cancel = tk.Button(self.buttonFrame, text="Cancel", width=8, command=self.top.destroy)
 
             self.top.bind('<Escape>', lambda x=0: self.cancel.invoke())
@@ -229,7 +227,7 @@ class MatchSetup:
 
         else:
             msg = "You must add at least one game and two \nplayers before running a match"
-            self.message = Failure(master, msg)
+            self.message = Failure(root, msg)
 
 
     def start_callback(self, *args):
@@ -314,7 +312,7 @@ class MatchSetup:
         self.top.withdraw()
 
 
-    def action(self, master, data, menu):
+    def action(self, root, data, menu):
         '''Starts match, or prompts to add missing entries'''
         if self.check_missing(data):
             if self.validate_missing(data):
@@ -324,17 +322,18 @@ class MatchSetup:
                 self.message = Failure(self.top,msg)
         else:
             match = [self.game.get(),self.p1.get(),self.p2.get()]
-            menu.matchResults.open(master, data, match, self.top)
+            menu.matchResults.open(root, data, match, self.top)
             self.top.withdraw()
 
 
 
 class MatchRecords:
-    def open(self, master, data):
+    def open(self, root, data):
         '''Match records display window'''
-        self.top = tk.Toplevel(master)
+        self.top = tk.Toplevel(root)
         self.top.title("Match Records")
         self.top.wm_attributes("-topmost", True)
+        self.top.grab_set()
 
         self.mainFrame = tk.Frame(self.top)
         self.records = data.records.read()
@@ -360,9 +359,9 @@ class MatchRecords:
         return gamedict
 
 
-    def build_tree(self, master, data):
+    def build_tree(self, root, data):
         '''Builds treeview widget'''
-        tree = ttk.Treeview(master)
+        tree = ttk.Treeview(root)
         tree['columns'] = ('d','g','p1','p2','w')
         tree['displaycolumns'] = ('d','p1','p2','w')
 

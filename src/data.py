@@ -227,7 +227,7 @@ class Records:
                 for r in rFile:
                     records.append(self.format(r))
 
-            del records[0]
+            del records[0] # Remove headers
 
         except:
             records = []
@@ -303,6 +303,9 @@ class Data:
         '''Rebuilds players.json and games.json by parsing all records'''
         try:
             with open(self.records.path, 'r') as rFile:
+                backupPlayers = self.players.all.copy()
+                backupGames = self.games.all.copy()
+
                 self.players.all = {}
                 self.games.all = {}
 
@@ -313,6 +316,15 @@ class Data:
                     match = self.records.format(line)
                     self.games.parse_match(match)
                     self.players.parse_match(match)
+
+            # Add back players/games with no recorded matches
+            for p in backupPlayers.keys():
+                if p not in self.players.all:
+                    self.players.add(p)
+
+            for g in backupGames.keys():
+                if g not in self.games.all:
+                    self.games.add(g)
 
             self.save_all()
 

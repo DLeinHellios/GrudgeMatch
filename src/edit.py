@@ -42,33 +42,38 @@ class AddPlayer:
     def action(self, manage, data):
         '''Conducts the action of the "Add" button'''
         name = self.entry.get()
-        inv = data.players.invalidate_name(name)
+        err = data.validate_player_name(name)
         self.top.unbind('<Return>')
 
         if name == '': # No name entered
             pass
 
-        elif inv == 0: # Name is valid
-            data.players.add(name)
-            data.players.save()
+        elif err == 0: # Name is valid
+            data.new_player(name)
             msg = 'Player "{}" has been added'.format(name)
-            manage.refresh_tree(data)
             self.message = Success(self.top, msg)
+            manage.refresh_tree(data)
 
-        elif inv == 1: # Name already in-use
+        elif err == 1: # Name already in-use
             msg = 'Name "{}" already in-use'.format(name)
             self.message = Failure(self.top, msg)
 
-        elif inv == 2: # Name is on list of reserved names
+        elif err == 2: # Name is currently inactive, enable
+            data.activate_player(name)
+            msg = 'Player "{}" is now active'.format(name)
+            self.message = Success(self.top, msg)
+            manage.refresh_tree(data)
+
+        elif err == 3: # Name is on list of reserved names
             msg = 'Name "{}" is not allowed'.format(name)
             self.message = Failure(self.top, msg)
 
-        elif inv == 3: # Name contains an illegal character
-            msg = 'Name "{}" contains illegal characters'.format(name)
+        elif err == 4: # Name greater than 14 characters
+            msg = 'Name "{}" is too long. Max = 10 characters'.format(name)
             self.message = Failure(self.top, msg)
 
-        elif inv == 4: # Name greater than 14 characters
-            msg = 'Name "{}" is too long. Max = 10 characters'.format(name)
+        elif err == 5: # Name contains an illegal character
+            msg = 'Name "{}" contains illegal characters'.format(name)
             self.message = Failure(self.top, msg)
 
         else:
@@ -80,7 +85,7 @@ class AddPlayer:
 class RemovePlayer:
     def open(self, manage, data):
         '''Opens the Remove Player window'''
-        if not len(data.players.all):
+        if not len(data.query.all_player_names(True)):
             msg = "No players found"
             self.message = Failure(manage.top, msg)
 
@@ -101,7 +106,7 @@ class RemovePlayer:
             self.playerName.trace('w', self.reset_confirm)
             self.prompt = tk.Label(self.promptFrame, text="Player:")
             self.select = ttk.Combobox(self.promptFrame, width=14, textvariable=self.playerName)
-            self.select['values'] = list(data.players.all.keys())
+            self.select['values'] = data.query.all_player_names(True)
 
             self.remove = tk.Button(self.top, text="Remove", width=8, command=self.confirm)
             self.cancel = tk.Button(self.top, text="Cancel", width=8, command=self.top.destroy)
@@ -134,7 +139,7 @@ class RemovePlayer:
     def confirm(self):
         '''Adds additional confirm dialog to remove button'''
         name = self.playerName.get()
-        if name != '' and name in self.data.players.all.keys():
+        if name != '' and name in self.data.query.all_player_names(True):
             self.remove['text'] = 'Confirm?'
             self.remove['command'] = self.action
 
@@ -146,9 +151,8 @@ class RemovePlayer:
         if name == '': # No name entered
             pass
 
-        elif name in self.data.players.all.keys():
-            self.data.players.remove(name)
-            self.data.players.save()
+        elif name in self.data.query.all_player_names(True):
+            self.data.deactivate_player(name)
             msg = "Player {} has been removed".format(name)
             self.manage.refresh_tree(self.data)
             self.message = Success(self.top, msg)
@@ -192,23 +196,24 @@ class ManagePlayers:
     def build_tree(self, root, data):
         '''Builds player data tree'''
         tree = ttk.Treeview(root)
-        tree['columns'] = ('matches','last')
+        tree['columns'] = ('wins','matches','last')
 
         tree.tag_configure('0', background='#E8E8E8')
         tree.tag_configure('1', background='#DFDFDF')
 
         tree.column('#0',width=100)
+        tree.column('wins',width=60)
         tree.column('matches',width=80)
         tree.column('last',width=80)
 
         tree.heading('#0', text='Player', anchor=tk.W)
+        tree.heading('wins', text='Wins', anchor=tk.W)
         tree.heading('matches', text='Matches', anchor=tk.W)
         tree.heading('last', text='Last', anchor=tk.W)
 
         c = 0
-        for p,stats in data.players.all.items():
-            d = [data.players.all[p]['total'][1],data.players.all[p]['last']]
-            tree.insert('', tk.END, text=p, values=d, tag=str(c%2))
+        for p in data.query.all_player_details(True):
+            tree.insert('', tk.END, text=p[1], values=[p[2],p[3],p[4]], tag=str(c%2))
             c += 1
 
         return tree
@@ -276,32 +281,37 @@ class AddGame:
     def action(self, manage, data):
         '''Conducts the action of the "Add" button'''
         name = self.entry.get()
-        inv = data.games.invalidate_name(name)
+        err = data.validate_game_name(name)
         self.top.unbind('<Return>') # TODO - better solution for Windows not focusing pop-up
 
         if name == '': # No name entered
             pass
 
-        elif inv == 0: # Name is valid
-            data.games.add(name)
-            data.games.save()
+        elif err == 0: # Name is valid
+            data.new_game(name)
             msg = 'Game "{}" has been added'.format(name)
             manage.refresh_tree(data)
             self.message = Success(self.top, msg)
 
-        elif inv == 1: # Name already in-use
+        elif err == 1: # Name already in-use
             msg = 'Name "{}" already in-use'.format(name)
             self.message = Failure(self.top, msg)
 
-        elif inv == 2: # Name is on list of reserved names
+        elif err == 2: # Name is currently inactive, enable
+            data.activate_game(name)
+            msg = 'Game "{}" is now active'.format(name)
+            self.message = Success(self.top, msg)
+            manage.refresh_tree(data)
+
+        elif err == 3: # Name is on list of reserved names
             msg = 'Name "{}" is not allowed'.format(name)
             self.message = Failure(self.top, msg)
 
-        elif inv == 3: # Name contains an illegal character
+        elif err == 4: # Name contains an illegal character
             msg = 'Name "{}" contains illegal characters'.format(name)
             self.message = Failure(self.top, msg)
 
-        elif inv == 4: # Name greater than 30 characters
+        elif err == 5: # Name greater than 30 characters
             msg = 'Name "{}" is too long. Max = 30 characters'.format(name)
             self.message = Failure(self.top, msg)
 
@@ -314,7 +324,7 @@ class AddGame:
 class RemoveGame:
     def open(self, manage, data):
         '''Opens the Remove Game window'''
-        if not len(data.games.all):
+        if not len(data.query.all_game_names(True)):
             msg = "No games found"
             self.message = Failure(manage, msg)
 
@@ -335,7 +345,7 @@ class RemoveGame:
             self.gameName.trace('w', self.reset_confirm)
             self.prompt = tk.Label(self.promptFrame, text="Game:")
             self.select = ttk.Combobox(self.promptFrame, width=30, textvariable=self.gameName)
-            self.select['values'] = list(data.games.all.keys())
+            self.select['values'] = data.query.all_game_names(True)
 
             self.remove = tk.Button(self.top, text="Remove", width=8, command=self.confirm)
             self.cancel = tk.Button(self.top, text="Cancel", width=8, command=self.top.destroy)
@@ -368,7 +378,7 @@ class RemoveGame:
     def confirm(self):
         '''Adds additional confirm dialog to remove button'''
         name = self.gameName.get()
-        if name != '' and name in self.data.games.all.keys():
+        if name != '' and name in self.data.query.all_game_names(True):
             self.remove['text'] = 'Confirm?'
             self.remove['command'] = self.action
 
@@ -380,9 +390,8 @@ class RemoveGame:
         if name == '': # No name entered
             pass
 
-        elif name in self.data.games.all.keys():
-            self.data.games.remove(name)
-            self.data.games.save()
+        elif name in self.data.query.all_game_names(True):
+            self.data.deactivate_game(name)
             msg = "{} has been removed".format(name)
             self.manage.refresh_tree(self.data)
             self.message = Success(self.top, msg)
@@ -440,9 +449,8 @@ class ManageGames:
         tree.heading('last', text='Last', anchor=tk.W)
 
         c = 0
-        for g,stats in data.games.all.items():
-            d = [data.games.all[g]['match'],data.games.all[g]['last']]
-            tree.insert('', tk.END, text=g, values=d, tag=str(c%2))
+        for g in data.query.all_game_details(True):
+            tree.insert('', tk.END, text=g[1], values=[g[2],g[3]], tag=str(c%2))
             c += 1
 
         return tree

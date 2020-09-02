@@ -8,27 +8,25 @@ class MatchResults:
     def open(self, root, data, match, setup):
         '''Selects the winner of the match and submits the results'''
         self.top = tk.Toplevel(root)
-        self.top.title("Ongoing Match")
+        self.top.title("Submit Match")
         self.top.resizable(False,False)
         self.top.wm_attributes("-topmost", True)
 
-        today = datetime.date.today()
-        self.match = [today.strftime("%m/%d/%Y")] + match
-
         self.avatars,self.icons = [],[]
-        self.load_players(data, setup, match[1],match[2])
+        self.load_players(data, setup, match["p1"],match["p2"])
 
         self.vsFrame = tk.Frame(self.top)
         self.vsImage = tk.PhotoImage(master=self.top, file=os.path.join('img', 'vs.png'))
         self.vs = tk.Label(master=self.vsFrame, image=self.vsImage)
 
-        self.matchText = tk.Label(master=self.top, text=self.match[1] + '\n' + self.match[0])
+        self.matchText = tk.Label(master=self.top, text=match["game"] + '\n' + match["date"])
         self.winner = None
 
         self.buttonFrame = tk.Frame(self.top)
         self.submit = tk.Button(self.buttonFrame, text="Submit", width=8, state=tk.DISABLED, command=lambda d=data,s=setup: self.submit_confirm(d,s))
         self.cancel = tk.Button(self.buttonFrame, text="Cancel", width=8, command=lambda s=setup: self.cancel_match(s))
 
+        self.match = match # Hold reference to match values for later storage to records
         self.position()
         self.top.grab_set()
 
@@ -65,7 +63,7 @@ class MatchResults:
     def submit_match(self, data, setup):
         '''Submits match record and returns to setup'''
         if self.winner != None:
-            self.match.append(self.winner)
+            self.match['win'] = self.winner
             data.record_match(self.match)
 
             self.top.destroy()
@@ -110,37 +108,36 @@ class MatchResults:
 
 
 class MatchAddEntry:
-    def __init__(self, root, data, additions):
+    def __init__(self, setup, data, missing, inactive):
         '''Window for quickly adding missing entries from match setup dialog'''
-        self.top = tk.Toplevel(root)
+        self.top = tk.Toplevel(setup.top)
         self.top.title("Missing Entries")
         self.top.resizable(False,False)
         self.top.wm_attributes("-topmost", True)
 
         self.textFrame = tk.Frame(self.top)
         self.head = tk.Label(self.top, text='Entries for match are missing! \nWould you like to add them now?')
-        msg = self.create_body_text(additions)
+        msg = self.create_body_text(missing, inactive)
         self.body = tk.Label(self.textFrame, text=msg, justify=tk.LEFT, font="-size 8")
 
         self.buttonFrame = tk.Frame(self.top)
-        self.add = tk.Button(self.buttonFrame, text="Add", width=6, command=lambda m=root, d=data, a=additions: self.action(m,d,a))
-        self.cancel = tk.Button(self.buttonFrame, text="Cancel", width=6, command=lambda m=root: self.close(m))
+        self.add = tk.Button(self.buttonFrame, text="Add", width=6, command=lambda s=setup, d=data, m=missing, i=inactive: self.action(s,d,m,i))
+        self.cancel = tk.Button(self.buttonFrame, text="Cancel", width=6, command=lambda s=setup: self.close(s))
 
         self.position()
         self.top.grab_set()
 
 
-    def create_body_text(self, additions):
+    def create_body_text(self, missing, inactive):
         '''Returns formated string for message body'''
         entryList = []
-        if 'g' in additions.keys():
-            entryList.append('- Game: ' + additions['g'])
-        if 'p1' in additions.keys():
-            entryList.append('- Player: ' + additions['p1'])
-        if 'p2' in additions.keys():
-            entryList.append('- Player: ' + additions['p2'])
+        for entry in missing + inactive:
+            if entry[0] == 'game':
+                entryList.append('- Game: ' + entry[1])
+            elif entry[0] == 'player':
+                entryList.append('- Player: ' + entry[1])
 
-        return '\n'.join(entryList)
+        return '\n'.join(sorted(entryList)) # Return as joined string
 
 
     def position(self):
@@ -155,79 +152,84 @@ class MatchAddEntry:
         self.buttonFrame.pack()
 
 
-    def action(self, root, data, additions):
+    def action(self, setup, data, missing, inactive):
         '''Adds missing entries and begins match'''
-        for key, value in additions.items():
-            if key == 'g':
-                data.games.add(value)
-            elif key[0] == 'p':
-                data.players.add(value)
+        # Create new for missing
+        for entry in missing:
+            if entry[0] == 'game':
+                data.new_game(entry[1])
+            elif entry[0] == 'player':
+                data.new_player(entry[1])
 
-        data.save_all()
+        # Activate inactive
+        for entry in inactive:
+            if entry[0] == 'game':
+                data.activate_game(entry[1])
+            elif entry[0] == 'player':
+                data.activate_player(entry[1])
+
+        # Clean-up, return to setup screen
         self.top.destroy()
-        root.deiconify()
-        root.grab_set()
+        setup.refresh_lists(data)
+        setup.top.deiconify()
+        setup.top.grab_set()
 
 
-    def close(self, root):
+    def close(self, setup):
         '''Destroys self.top and refocuses on MatchSetup'''
         self.top.destroy()
-        root.deiconify()
-        root.grab_set()
+        setup.top.deiconify()
+        setup.top.grab_set()
 
 
 
 class MatchSetup:
     def open(self, root, data, menu):
         '''Match setup window'''
-        if len(data.players.all) > 1 and len(data.games.all) > 0:
-            self.top = tk.Toplevel(root)
-            self.top.title("Match Setup")
-            self.top.resizable(False,False)
-            self.top.wm_attributes("-topmost", True)
+        self.top = tk.Toplevel(root)
+        self.top.title("Match Setup")
+        self.top.resizable(False,False)
+        self.top.wm_attributes("-topmost", True)
 
-            self.head = tk.Label(self.top, text="Select match options:")
+        self.head = tk.Label(self.top, text="Select match options:")
 
-            self.gameFrame = tk.Frame(self.top)
-            self.playerFrame = tk.Frame(self.top)
+        self.gameFrame = tk.Frame(self.top)
+        self.playerFrame = tk.Frame(self.top)
 
-            self.game = tk.StringVar()
-            self.game.trace('w', self.start_callback)
-            self.p1 = tk.StringVar()
-            self.p1.trace('w', self.start_callback)
-            self.p2 = tk.StringVar()
-            self.p2.trace('w', self.start_callback)
+        self.game = tk.StringVar()
+        self.game.trace('w', self.start_callback)
+        self.p1 = tk.StringVar()
+        self.p1.trace('w', self.start_callback)
+        self.p2 = tk.StringVar()
+        self.p2.trace('w', self.start_callback)
 
-            self.selectGame = ttk.Combobox(self.gameFrame, width=30, textvariable=self.game)
-            self.selectP1 = ttk.Combobox(self.playerFrame, width=14, textvariable=self.p1)
-            self.selectP2 = ttk.Combobox(self.playerFrame, width=14, textvariable=self.p2)
+        today = datetime.date.today()
+        self.date = today.strftime("%Y-%m-%d")
 
-            self.selectGame['values'] = sorted(list(data.games.all.keys()))
-            self.selectP1['values'] = list(data.players.all.keys())
-            self.selectP2['values'] = list(data.players.all.keys())
+        self.selectGame = ttk.Combobox(self.gameFrame, width=30, textvariable=self.game)
+        self.selectP1 = ttk.Combobox(self.playerFrame, width=14, textvariable=self.p1)
+        self.selectP2 = ttk.Combobox(self.playerFrame, width=14, textvariable=self.p2)
 
-            self.labelGame = tk.Label(self.gameFrame, text="Game:")
-            self.labelP1 = tk.Label(self.playerFrame, text="Player 1:")
-            self.labelP2 = tk.Label(self.playerFrame, text="Player 2:")
+        self.refresh_lists(data)
 
-            self.tagP1 = tk.Button(self.playerFrame, text='Tag', width=8, height=1)
-            self.tagP2 = tk.Button(self.playerFrame, text='Tag', width=8)
+        self.labelGame = tk.Label(self.gameFrame, text="Game:")
+        self.labelP1 = tk.Label(self.playerFrame, text="Player 1:")
+        self.labelP2 = tk.Label(self.playerFrame, text="Player 2:")
 
-            self.separator=ttk.Separator(self.top, orient=tk.HORIZONTAL)
+        self.tagP1 = tk.Button(self.playerFrame, text='Tag', width=8, height=1)
+        self.tagP2 = tk.Button(self.playerFrame, text='Tag', width=8)
 
-            self.buttonFrame = tk.Frame(self.top)
-            self.start = tk.Button(self.buttonFrame, text="Start", width=8, state=tk.DISABLED, command=lambda  m=root,d=data,me=menu: self.action(m,d,me))
-            self.cancel = tk.Button(self.buttonFrame, text="Cancel", width=8, command=self.top.destroy)
+        self.separator=ttk.Separator(self.top, orient=tk.HORIZONTAL)
 
-            self.top.bind('<Escape>', lambda x=0: self.cancel.invoke())
-            self.top.bind('<Return>', lambda x=0: self.start.invoke())
+        self.buttonFrame = tk.Frame(self.top)
+        self.start = tk.Button(self.buttonFrame, text="Start", width=8, state=tk.DISABLED, command=lambda  m=root,d=data,me=menu: self.action(m,d,me))
+        self.cancel = tk.Button(self.buttonFrame, text="Cancel", width=8, command=self.top.destroy)
 
-            self.position()
-            self.top.grab_set()
+        self.top.bind('<Escape>', lambda x=0: self.cancel.invoke())
+        self.top.bind('<Return>', lambda x=0: self.start.invoke())
 
-        else:
-            msg = "You must add at least one game and two \nplayers before running a match"
-            self.message = Failure(root, msg)
+        self.position()
+        self.top.grab_set()
 
 
     def start_callback(self, *args):
@@ -243,6 +245,16 @@ class MatchSetup:
             self.start['state'] = tk.NORMAL
         else:
             self.start['state'] = tk.DISABLED
+
+
+    def refresh_lists(self, data):
+        '''Refreshes the list of players/games'''
+        self.gamesList = data.query.all_game_names(True)
+        self.playersList = data.query.all_player_names(True)
+
+        self.selectGame['values'] = sorted(self.gamesList)
+        self.selectP1['values'] = self.playersList
+        self.selectP2['values'] = self.playersList
 
 
     def position(self):
@@ -269,59 +281,74 @@ class MatchSetup:
 
 
     def check_missing(self, data):
-        '''Checks if entries from comboboxes are missing from data'''
-        missing = False
-        if self.game.get() not in data.games.all.keys():
-            missing = True
-        if self.p1.get() not in data.players.all.keys():
-            missing = True
-        if self.p2.get() not in data.players.all.keys():
-            missing = True
+        '''Initial check if any selection is missing/inactive from db, returns list of tuples describing missing items'''
+        missing, inactive = [], []
 
-        return missing
+        playerStatus = data.query.all_player_status()
+        gameStatus = data.query.all_game_status()
+
+        # Check game
+        if self.game.get() in gameStatus.keys():
+            if not gameStatus[self.game.get()]:
+                inactive.append(('game', self.game.get()))
+        else:
+            missing.append(('game', self.game.get()))
+
+        # Check P1
+        if self.p1.get() in playerStatus.keys():
+            if not playerStatus[self.p1.get()]:
+                inactive.append(('player', self.p1.get()))
+        else:
+            missing.append(('player', self.p1.get()))
+
+        # Check P2
+        if self.p2.get() in playerStatus.keys():
+            if not playerStatus[self.p2.get()]:
+                inactive.append(('player', self.p2.get()))
+        else:
+            missing.append(('player', self.p2.get()))
+
+        return missing, inactive
 
 
-    def validate_missing(self, data):
-        '''Validates the names entered, but missing'''
+    def validate_missing(self, data, missing):
+        '''Checks missing values are valid to prep adding to db, returns bool'''
         valid = True
-        g = self.game.get()
-        p1 = self.p1.get()
-        p2 = self.p2.get()
+        check = [self.game.get(), self.p1.get(), self.p2.get()]
 
-        if g not in data.games.all.keys() and data.games.invalidate_name(g):
-            valid = False
-        elif p1 not in data.players.all.keys() and data.players.invalidate_name(p1):
-            valid = False
-        elif p2 not in data.players.all.keys() and data.players.invalidate_name(p2):
-            valid = False
+        for entry in missing:
+            if entry[0] == 'game':
+                if data.validate_game_name(entry[1]):
+                    valid = False
+            elif entry[0] == 'player':
+                if data.validate_player_name(entry[1]):
+                    valid = False
 
         return valid
 
 
-    def add_missing(self, data, menu):
-        '''Creates dialog to confirm automatic adding of missing game/player entries'''
-        addEntries = {}
-        if self.game.get() not in data.games.all.keys():
-            addEntries['g'] = self.game.get()
-        if self.p1.get() not in data.players.all.keys():
-            addEntries['p1'] = self.p1.get()
-        if self.p2.get() not in data.players.all.keys():
-            addEntries['p2'] = self.p2.get()
-
-        self.message = MatchAddEntry(self.top, data, addEntries)
-        self.top.withdraw()
-
-
     def action(self, root, data, menu):
         '''Starts match, or prompts to add missing entries'''
-        if self.check_missing(data):
-            if self.validate_missing(data):
-                self.add_missing(data, menu)
+        missing, inactive = self.check_missing(data)
+        if missing != []: # Some entries missing
+            if self.validate_missing(data, missing):
+                self.message = MatchAddEntry(self, data, missing, inactive)
+                self.top.withdraw()
             else:
                 msg = "Unable to add missing entries.\nEntered names are invalid."
                 self.message = Failure(self.top,msg)
-        else:
-            match = [self.game.get(),self.p1.get(),self.p2.get()]
+
+        elif inactive != []: # No missing entries, but inactive
+            self.message = MatchAddEntry(self, data, [], inactive)
+            self.top.withdraw()
+
+        else: # Match is ready to go
+            match = {
+                "game": self.game.get(),
+                "p1": self.p1.get(),
+                "p2": self.p2.get(),
+                "date": self.date
+            }
             menu.matchResults.open(root, data, match, self.top)
             self.top.withdraw()
 
@@ -332,11 +359,8 @@ class MatchRecords:
         '''Match records display window'''
         self.top = tk.Toplevel(root)
         self.top.title("Match Records")
-        self.top.wm_attributes("-topmost", True)
-        self.top.grab_set()
 
         self.mainFrame = tk.Frame(self.top)
-        self.records = data.records.read()
         self.tree = self.build_tree(self.mainFrame, data)
         self.scrollbar = ttk.Scrollbar(self.mainFrame, orient="vertical", command=self.tree.yview)
         self.tree.configure(yscrollcommand=self.scrollbar.set)
@@ -346,51 +370,36 @@ class MatchRecords:
         self.position()
 
 
-    def build_gamedict(self, records):
-        '''Builds a list of games for record categories'''
-        gamedict = {}
-        for r in records:
-            if r[1] not in gamedict.keys():
-                gamedict[r[1]] = 0
-
-        # Sort alphabetically by game
-        gamedict = {k: v for k, v in sorted(gamedict.items(), key=lambda item: item[0], reverse=True)}
-
-        return gamedict
-
-
     def build_tree(self, root, data):
         '''Builds treeview widget'''
         tree = ttk.Treeview(root)
-        tree['columns'] = ('d','g','p1','p2','w')
+        tree['columns'] = ('d','p1','p2','w','g')
         tree['displaycolumns'] = ('d','p1','p2','w')
 
-        tree.tag_configure('g', background='light gray')
+        tree.tag_configure('folder', background='light gray')
         tree.tag_configure('0', background='#E8E8E8')
         tree.tag_configure('1', background='#DFDFDF')
 
         tree.column('#0',width=150,minwidth=25)
         tree.column('d', width=100,minwidth=25)
-        tree.column('g', width=200,minwidth=25)
         tree.column('p1',width=100,minwidth=25)
         tree.column('p2',width=100,minwidth=25)
         tree.column('w',width=100,minwidth=25)
+        tree.column('g', width=200,minwidth=25)
 
         tree.heading('#0', text='Game', anchor=tk.W)
         tree.heading('d', text="Date",anchor=tk.W)
-        tree.heading('g', text="Game",anchor=tk.W)
         tree.heading('p1', text="P1",anchor=tk.W)
         tree.heading('p2', text="P2",anchor=tk.W)
         tree.heading('w', text="Winner",anchor=tk.W)
+        tree.heading('g', text="Game",anchor=tk.W)
 
-        gamedict = self.build_gamedict(self.records)
-        gamefolders = {}
-        for g in gamedict.keys():
-            gamefolders[g] = tree.insert('',-1,text=g,tag='g')
+        folders = {} # Holds folders for later match placement
+        for f in data.query.match_folders():
+            folders[f[1]] = tree.insert('', -1, text=f[1], tag='folder')
 
-        for r in self.records:
-            tree.insert(gamefolders[r[1]],-1,text=str(gamedict[r[1]]).zfill(3),values=r, tag=str(gamedict[r[1]]%2))
-            gamedict[r[1]] += 1
+        for r in data.query.match_records("%","%","%"): # TODO: FILTER HERE
+            tree.insert(folders[r[5]], -1, text=r[0], values=r[1:5], tag='1') #TODO: Fix row color tags
 
         return tree
 

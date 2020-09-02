@@ -14,7 +14,7 @@ class PlayerIcons:
         self.avatars['default'] = tk.PhotoImage(master=self.root, file=os.path.join('img', 'avatars', 'default.png'))
 
         self.generate(data)
-        self.position(self.root, data.config.all['hide_sidebar'])
+        self.position(self.root, data.config.settings['hide_sidebar'])
 
 
     def add_icon(self, name):
@@ -41,7 +41,7 @@ class PlayerIcons:
 
     def generate(self, data):
         '''Generates initial player icon buttons'''
-        for name in data.players.all.keys():
+        for name in data.query.all_player_names(True):
             self.add_icon(name)
 
 
@@ -68,13 +68,13 @@ class PlayerIcons:
         '''Removes all player icon buttons not in data.players.all'''
         iconCopy = self.icons.copy()
         for name in iconCopy:
-            if name not in data.players.all.keys():
+            if name not in data.query.all_player_names(True):
                 self.remove_icon(name)
 
 
     def append(self, data):
         '''Adds all pending icons to self.icons from data.players.all'''
-        for name in data.players.all:
+        for name in data.query.all_player_names(True):
             if name not in self.icons.keys():
                 self.add_icon(name)
 
@@ -83,7 +83,7 @@ class PlayerIcons:
         '''Regenerates and repositions player icons'''
         self.trim(data)
         self.append(data)
-        self.position(self.root, data.config.all['hide_sidebar'])
+        self.position(self.root, data.config.settings['hide_sidebar'])
 
 
 
@@ -121,9 +121,6 @@ class TopMenu:
         self.file = tk.Menu(self.top, tearoff=0)
         #self.file.add_command(label="Save", command=print)
         self.file.add_command(label="Refresh", command=lambda d=data: icons.refresh(d))
-        self.file.add_command(label="Rebuild", command=lambda m=root, d=data: menus.rebuildData.open(m,d))
-        #self.file.add_separator()
-        #self.file.add_command(label="Import", command=print)
         #self.file.add_command(label="Export", command=print)
         self.file.add_separator()
         self.file.add_command(label="Exit", command=sys.exit)
@@ -202,19 +199,19 @@ class Frames:
         self.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         self.sideFrame.pack_propagate(0)
 
-        if not data.config.all['hide_sidebar']:
+        if not data.config.settings['hide_sidebar']:
             self.sideFrame.pack(side=tk.RIGHT, fill=tk.Y)
 
 
     def toggle_sidebar(self, data):
         '''Switched the sidebar between hidden/shown'''
-        if data.config.all['hide_sidebar']:
+        if data.config.settings['hide_sidebar']:
             self.sideFrame.pack(side=tk.RIGHT, fill=tk.Y)
-            data.config.all['hide_sidebar'] = False
+            data.config.settings['hide_sidebar'] = False
 
         else:
             self.sideFrame.pack_forget()
-            data.config.all['hide_sidebar'] = True
+            data.config.settings['hide_sidebar'] = True
 
         data.config.save()
 
@@ -225,8 +222,6 @@ class Menus:
         '''Class for holding pop-up menu objects'''
         self.manPlayers = ManagePlayers()
         self.manGames = ManageGames()
-
-        self.rebuildData = Rebuild()
 
         self.matchSetup = MatchSetup()
         self.matchResults = MatchResults()
@@ -272,4 +267,4 @@ class Window:
 
     def on_resize(self, event: tk.Event) -> None:
         '''Updates positions on window resize'''
-        self.icons.position(self.root, self.data.config.all['hide_sidebar'])
+        self.icons.position(self.root, self.data.config.settings['hide_sidebar'])

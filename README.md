@@ -5,4 +5,8 @@ GrudgeMatch is a (soon-to-be) versatile record-keeper for competitive two-player
 
 *GrudgeMatch is still in development, and is not feature-complete.*
 
+<hr>
 
+![A](img/screenshots/grudgematch_01.png?raw=true)
+
+![B](img/screenshots/grudgematch_02.png?raw=true)

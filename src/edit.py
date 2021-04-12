@@ -324,60 +324,37 @@ class AddGame:
 class RemoveGame:
     def open(self, manage, data):
         '''Opens the Remove Game window'''
-        if not len(data.query.all_game_names(True)):
-            msg = "No games found"
-            self.message = Failure(manage, msg)
+        # References to manage window and data object
+        self.manage = manage
+        self.data = data
+        self.selected = manage.get_selection()
 
-        else:
-            # References to manage window and data object
-            self.manage = manage
-            self.data = data
+        self.top = tk.Toplevel(self.manage.top)
+        self.top.title("Remove Game")
+        self.top.resizable(False,False)
+        self.top.wm_attributes("-topmost", True)
 
-            self.top = tk.Toplevel(self.manage.top)
-            self.top.title("Remove a Game")
-            self.top.resizable(False,False)
-            self.top.wm_attributes("-topmost", True)
+        self.text = tk.Label(self.top, text="Remove game: {}?".format(self.selected['text']))
+        self.remove = tk.Button(self.top, text="Remove", width=8, command=self.confirm)
+        self.cancel = tk.Button(self.top, text="Cancel", width=8, command=self.top.destroy)
 
-            self.text = tk.Label(self.top, text="Select a game to remove:")
+        self.top.bind('<Return>', lambda x=0:self.remove.invoke())
+        self.top.bind('<Escape>', lambda x=0:self.cancel.invoke())
 
-            self.promptFrame = tk.Frame(self.top)
-            self.gameName = tk.StringVar()
-            self.gameName.trace('w', self.reset_confirm)
-            self.prompt = tk.Label(self.promptFrame, text="Game:")
-            self.select = ttk.Combobox(self.promptFrame, width=30, textvariable=self.gameName)
-            self.select['values'] = data.query.all_game_names(True)
-
-            self.remove = tk.Button(self.top, text="Remove", width=8, command=self.confirm)
-            self.cancel = tk.Button(self.top, text="Cancel", width=8, command=self.top.destroy)
-
-            self.top.bind('<Return>', lambda x=0:self.remove.invoke())
-            self.top.bind('<Escape>', lambda x=0:self.cancel.invoke())
-
-            self.position()
-            self.select.focus()
+        self.position()
 
 
     def position(self):
         '''Positions window elements'''
-        self.text.pack(side=tk.TOP, pady=4)
-
-        self.promptFrame.pack(padx=4)
-        self.prompt.pack(side=tk.LEFT)
-        self.select.pack(side=tk.RIGHT)
+        self.text.pack(side=tk.TOP, padx=4, pady=4)
 
         self.cancel.pack(side=tk.RIGHT, padx=4, pady=4)
         self.remove.pack(side=tk.RIGHT, padx=4)
 
 
-    def reset_confirm(self, *args):
-        '''Resets remove button'''
-        self.remove['text'] = 'Remove'
-        self.remove['command'] = self.confirm
-
-
     def confirm(self):
         '''Adds additional confirm dialog to remove button'''
-        name = self.gameName.get()
+        name = self.selected['text']
         if name != '' and name in self.data.query.all_game_names(True):
             self.remove['text'] = 'Confirm?'
             self.remove['command'] = self.action
@@ -385,12 +362,9 @@ class RemoveGame:
 
     def action(self):
         '''Conducts the action of the "Remove" button'''
-        name = self.gameName.get()
+        name = self.selected['text']
 
-        if name == '': # No name entered
-            pass
-
-        elif name in self.data.query.all_game_names(True):
+        if name in self.data.query.all_game_names(True):
             self.data.deactivate_game(name)
             msg = "{} has been removed".format(name)
             self.manage.refresh_tree(self.data)
@@ -422,13 +396,16 @@ class ManageGames:
 
         self.sideFrame = tk.Frame(self.top, width=80)
         self.addButton = tk.Button(self.sideFrame, text="Add", command=lambda m=self, d=data: self.add.open(m,d))
+        self.editButton = tk.Button(self.sideFrame, text="Edit", command=lambda d=data: self.open_update(d))
         self.remButton = tk.Button(self.sideFrame, text="Remove", command=lambda m=self, d=data: self.remove.open(m,d))
         self.refresh = tk.Button(self.sideFrame, text="Refresh", command=lambda d=data: self.refresh_tree(d))
         self.exit = tk.Button(self.sideFrame, text="Exit", command=self.top.destroy)
 
+        self.tree.bind('<<TreeviewSelect>>', self.check_selection)
         self.top.bind('<Escape>', lambda x=0:self.exit.invoke())
 
         self.position()
+        self.check_selection()
         self.top.grab_set()
 
 
@@ -464,6 +441,9 @@ class ManageGames:
         self.tree.configure(yscrollcommand=self.scrollbar.set)
         self.tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
+        self.check_selection()
+        self.tree.bind('<<TreeviewSelect>>', self.check_selection)
+
 
     def position(self):
         '''Positions window elements'''
@@ -474,6 +454,35 @@ class ManageGames:
         self.sideFrame.pack(side=tk.RIGHT,fill=tk.Y)
         self.sideFrame.pack_propagate(0)
         self.addButton.pack(side=tk.TOP,fill=tk.X)
+        #self.editButton.pack(side=tk.TOP,fill=tk.X)
         self.remButton.pack(side=tk.TOP,fill=tk.X)
         self.exit.pack(side=tk.BOTTOM,fill=tk.X)
         self.refresh.pack(side=tk.BOTTOM, fill=tk.X)
+
+
+    def check_selection(self, *args):
+        '''Checks if game is selected, enables/disables edit and remove buttons'''
+        selected = self.tree.selection()
+
+        if len(selected) == 1:
+            self.editButton['state'] = tk.NORMAL
+            self.remButton['state'] = tk.NORMAL
+
+        else:
+            self.editButton['state'] = tk.DISABLED
+            self.remButton['state'] = tk.DISABLED
+
+
+    def get_selection(self):
+        '''Returns currently selected single row as treeview item'''
+        selected = self.tree.focus()
+        item = self.tree.item(selected)
+
+        return item
+
+
+    def open_update(self, data):
+        '''Opens window to update game info'''
+        selected=self.tree.selection()
+        for i in selected:
+            print(self.tree.item(i))

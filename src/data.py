@@ -262,10 +262,10 @@ class Data:
             sys.exit()
 
 
-    def new_game(self, name):
+    def new_game(self, name, developer, platform, release):
         '''Creates a new game record with the provided name'''
         try:
-            self.c.execute('INSERT INTO "Games" ("Name") VALUES (?)', (name,))
+            self.c.execute('INSERT INTO "Games" ("Name","Developer","Platform","ReleaseYear") VALUES (?,?,?,?)', (name, developer, platform, release))
             self.db.commit()
         except:
             print("Unable to add game! Exiting...")

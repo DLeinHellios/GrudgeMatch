@@ -253,9 +253,20 @@ class AddGame:
 
         self.text = tk.Label(self.top, text="Add a new game:")
         self.promptFrame = tk.Frame(self.top)
-        self.name = tk.StringVar()
-        self.prompt = tk.Label(self.promptFrame, text="Game:")
-        self.entry = tk.Entry(self.promptFrame, textvar=self.name, width=14)
+        self.nameVar = tk.StringVar()
+        self.nameVar.trace('w', self.reset_name_entry)
+        self.nameLabel = tk.Label(self.promptFrame, text="Name:")
+        self.nameEntry = tk.Entry(self.promptFrame, textvar=self.nameVar, width=18)
+        self.devVar = tk.StringVar()
+        self.devLabel = tk.Label(self.promptFrame, text="Developer:")
+        self.devEntry = tk.Entry(self.promptFrame, textvar=self.devVar, width=18)
+        self.platformVar = tk.StringVar()
+        self.platformLabel = tk.Label(self.promptFrame, text="Platform:")
+        self.platformEntry = tk.Entry(self.promptFrame, textvar=self.platformVar, width=18)
+        self.yearVar = tk.StringVar()
+        self.yearLabel = tk.Label(self.promptFrame, text="Release Year:")
+        self.yearEntry = tk.Entry(self.promptFrame, textvar=self.yearVar, width=18)
+
         self.add = tk.Button(self.top, text="Add", width=8, command= lambda m=manage, d=data: self.action(m,d))
         self.cancel = tk.Button(self.top, text="Cancel", width=8, command=self.top.destroy)
 
@@ -263,7 +274,6 @@ class AddGame:
         self.top.bind('<Escape>', lambda x=0:self.cancel.invoke())
 
         self.position()
-        self.entry.focus()
 
 
     def position(self):
@@ -271,24 +281,56 @@ class AddGame:
         self.text.pack(side=tk.TOP, pady=4)
 
         self.promptFrame.pack(padx=4)
-        self.prompt.pack(side=tk.LEFT)
-        self.entry.pack(side=tk.RIGHT)
+        self.nameLabel.grid(row=1, column=1, padx=2, pady=2)
+        self.nameEntry.grid(row=1, column=2, padx=2, pady=2)
+
+        self.devLabel.grid(row=2, column=1, padx=2, pady=2)
+        self.devEntry.grid(row=2, column=2, padx=2, pady=2)
+
+        self.platformLabel.grid(row=3, column=1, padx=2, pady=2)
+        self.platformEntry.grid(row=3, column=2, padx=2, pady=2)
+
+        self.yearLabel.grid(row=4, column=1, padx=2, pady=2)
+        self.yearEntry.grid(row=4, column=2, padx=2, pady=2)
 
         self.add.pack(side=tk.LEFT, padx=4, pady=4)
         self.cancel.pack(side=tk.RIGHT, padx=4, pady=4)
 
 
+    def reset_name_entry(self, *args):
+        '''Resets name entry bg color'''
+        self.nameEntry.config(bg='white')
+
+
     def action(self, manage, data):
         '''Conducts the action of the "Add" button'''
-        name = self.entry.get()
+        name = self.nameVar.get()
+        developer = self.devVar.get()
+        platform = self.platformVar.get()
+
+        # Release year to int
+        try:
+            release = int(self.yearVar.get())
+
+        except:
+            release = None
+
+        # Fix blank values
+        if developer == '':
+            developer = None
+
+        if platform == '':
+            platform = None
+
+        # Validate name and proceed
         err = data.validate_game_name(name)
         self.top.unbind('<Return>') # TODO - better solution for Windows not focusing pop-up
 
         if name == '': # No name entered
-            pass
+            self.nameEntry.config(bg='red2')
 
         elif err == 0: # Name is valid
-            data.new_game(name)
+            data.new_game(name, developer, platform, release)
             msg = 'Game "{}" has been added'.format(name)
             manage.refresh_tree(data)
             self.message = Success(self.top, msg)
@@ -347,7 +389,6 @@ class RemoveGame:
     def position(self):
         '''Positions window elements'''
         self.text.pack(side=tk.TOP, padx=4, pady=4)
-
         self.cancel.pack(side=tk.RIGHT, padx=4, pady=4)
         self.remove.pack(side=tk.RIGHT, padx=4)
 

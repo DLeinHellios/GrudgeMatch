@@ -354,12 +354,12 @@ class Data:
             err = 3
 
         elif len(name) > 30: # Name is too long
-            err = 40
+            err =5
 
         elif not err:
             for i in illegal:
                 if i in name: # Name uses an illegal character
-                    err = 5
+                    err = 4
 
         return err
 

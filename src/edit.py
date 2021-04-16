@@ -251,6 +251,9 @@ class AddGame:
         self.top.resizable(False,False)
         self.top.wm_attributes("-topmost", True)
 
+        self.manage = manage
+        self.data = data
+
         self.text = tk.Label(self.top, text="Add a new game:")
         self.promptFrame = tk.Frame(self.top)
         self.nameVar = tk.StringVar()
@@ -267,13 +270,14 @@ class AddGame:
         self.yearLabel = tk.Label(self.promptFrame, text="Release Year:")
         self.yearEntry = tk.Entry(self.promptFrame, textvar=self.yearVar, width=18)
 
-        self.add = tk.Button(self.top, text="Add", width=8, command= lambda m=manage, d=data: self.action(m,d))
+        self.add = tk.Button(self.top, text="Add", width=8, command= self.action)
         self.cancel = tk.Button(self.top, text="Cancel", width=8, command=self.top.destroy)
 
         self.top.bind('<Return>', lambda x=0:self.add.invoke())
         self.top.bind('<Escape>', lambda x=0:self.cancel.invoke())
 
         self.position()
+        self.nameEntry.focus()
 
 
     def position(self):
@@ -302,7 +306,7 @@ class AddGame:
         self.nameEntry.config(bg='white')
 
 
-    def action(self, manage, data):
+    def action(self):
         '''Conducts the action of the "Add" button'''
         name = self.nameVar.get()
         developer = self.devVar.get()
@@ -323,39 +327,43 @@ class AddGame:
             platform = None
 
         # Validate name and proceed
-        err = data.validate_game_name(name)
+        err = self.data.validate_game_name(name)
         self.top.unbind('<Return>') # TODO - better solution for Windows not focusing pop-up
 
         if name == '': # No name entered
             self.nameEntry.config(bg='red2')
 
         elif err == 0: # Name is valid
-            data.new_game(name, developer, platform, release)
+            self.data.new_game(name, developer, platform, release)
             msg = 'Game "{}" has been added'.format(name)
-            manage.refresh_tree(data)
+            self.manage.refresh_tree(self.data)
             self.message = Success(self.top, msg)
 
         elif err == 1: # Name already in-use
             msg = 'Name "{}" already in-use'.format(name)
             self.message = Failure(self.top, msg)
+            self.nameEntry.config(bg='red2')
 
         elif err == 2: # Name is currently inactive, enable
             data.activate_game(name)
-            msg = 'Game "{}" is now active'.format(name)
+            msg = 'Game "{}" has been reactivated.\nPlease update game information with the edit function'.format(name)
             self.message = Success(self.top, msg)
-            manage.refresh_tree(data)
+            self.manage.refresh_tree(self.data)
 
         elif err == 3: # Name is on list of reserved names
             msg = 'Name "{}" is not allowed'.format(name)
             self.message = Failure(self.top, msg)
+            self.nameEntry.config(bg='red2')
 
         elif err == 4: # Name contains an illegal character
             msg = 'Name "{}" contains illegal characters'.format(name)
             self.message = Failure(self.top, msg)
+            self.nameEntry.config(bg='red2')
 
         elif err == 5: # Name greater than 30 characters
             msg = 'Name "{}" is too long. Max = 30 characters'.format(name)
             self.message = Failure(self.top, msg)
+            self.nameEntry.config(bg='red2')
 
         else:
             msg = 'Error adding game'
@@ -430,6 +438,10 @@ class ManageGames:
         self.top.title("Manage Games")
         self.top.wm_attributes("-topmost", True)
 
+        # Use these later, remove pointless args
+        self.root = root
+        self.data = data
+
         self.mainFrame = tk.Frame(self.top)
         self.tree = self.build_tree(self.mainFrame, data)
         self.scrollbar = ttk.Scrollbar(self.mainFrame, orient="vertical", command=self.tree.yview)
@@ -495,7 +507,6 @@ class ManageGames:
         self.sideFrame.pack(side=tk.RIGHT,fill=tk.Y)
         self.sideFrame.pack_propagate(0)
         self.addButton.pack(side=tk.TOP,fill=tk.X)
-        #self.editButton.pack(side=tk.TOP,fill=tk.X)
         self.remButton.pack(side=tk.TOP,fill=tk.X)
         self.exit.pack(side=tk.BOTTOM,fill=tk.X)
         self.refresh.pack(side=tk.BOTTOM, fill=tk.X)

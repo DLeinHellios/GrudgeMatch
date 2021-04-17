@@ -246,13 +246,12 @@ class ManagePlayers:
 class AddGame:
     def open(self, manage, data):
         '''Opens the Add Game window'''
+        self.manage = manage
+        self.data = data
+
         self.top = tk.Toplevel(manage.top)
         self.top.title("Add Game")
         self.top.resizable(False,False)
-        self.top.wm_attributes("-topmost", True)
-
-        self.manage = manage
-        self.data = data
 
         self.text = tk.Label(self.top, text="Add a new game:")
         self.promptFrame = tk.Frame(self.top)
@@ -277,6 +276,7 @@ class AddGame:
         self.top.bind('<Escape>', lambda x=0:self.cancel.invoke())
 
         self.position()
+        self.top.grab_set()
         self.nameEntry.focus()
 
 
@@ -345,7 +345,7 @@ class AddGame:
             self.nameEntry.config(bg='red2')
 
         elif err == 2: # Name is currently inactive, enable
-            data.activate_game(name)
+            self.data.activate_game(name)
             msg = 'Game "{}" has been reactivated.\nPlease update game information with the edit function'.format(name)
             self.message = Success(self.top, msg)
             self.manage.refresh_tree(self.data)
@@ -371,10 +371,111 @@ class AddGame:
 
 
 
+class EditGame:
+    def open(self, manage, data):
+        self.manage = manage
+        self.data = data
+        self.selected = manage.get_selection()
+        self.info = data.query.game_info(self.selected['text'])
+
+        self.top = tk.Toplevel(self.manage.top)
+        self.top.title("Edit Game")
+        self.top.resizable(False,False)
+
+        self.text = tk.Label(self.top, text="Editing game: {}".format(self.selected['text']))
+        self.promptFrame = tk.Frame(self.top)
+
+        self.devVar = tk.StringVar()
+        self.devLabel = tk.Label(self.promptFrame, text="Developer:")
+        self.devEntry = tk.Entry(self.promptFrame, textvar=self.devVar, width=18)
+
+        self.platformVar = tk.StringVar()
+        self.platformLabel = tk.Label(self.promptFrame, text="Platform:")
+        self.platformEntry = tk.Entry(self.promptFrame, textvar=self.platformVar, width=18)
+
+        self.yearVar = tk.StringVar()
+        self.yearLabel = tk.Label(self.promptFrame, text="Release Year:")
+        self.yearEntry = tk.Entry(self.promptFrame, textvar=self.yearVar, width=18)
+
+        self.populate_fields()
+
+        self.update = tk.Button(self.top, text="Update", width=8, command=self.action)
+        self.cancel = tk.Button(self.top, text="Cancel", width=8, command=self.top.destroy)
+
+        self.top.bind('<Return>', lambda x=0:self.update.invoke())
+        self.top.bind('<Escape>', lambda x=0:self.cancel.invoke())
+
+        self.position()
+        self.top.grab_set()
+
+
+    def position(self):
+        '''Positions window elements'''
+        self.text.pack(side=tk.TOP, pady=4)
+
+        self.promptFrame.pack(padx=4)
+
+        self.devLabel.grid(row=2, column=1, padx=2, pady=2)
+        self.devEntry.grid(row=2, column=2, padx=2, pady=2)
+
+        self.platformLabel.grid(row=3, column=1, padx=2, pady=2)
+        self.platformEntry.grid(row=3, column=2, padx=2, pady=2)
+
+        self.yearLabel.grid(row=4, column=1, padx=2, pady=2)
+        self.yearEntry.grid(row=4, column=2, padx=2, pady=2)
+
+        self.update.pack(side=tk.LEFT, padx=4, pady=4)
+        self.cancel.pack(side=tk.RIGHT, padx=4, pady=4)
+
+
+    def populate_fields(self):
+        '''Fills info fields with existing data'''
+        # Prepare values
+        dev = self.info[0]
+        platform = self.info[1]
+        year = self.info[2]
+
+        if dev == None:
+            dev = ''
+        if platform == None:
+            platform = ''
+        if year == None:
+            year = ''
+
+        # Set values
+        self.devVar.set(dev)
+        self.platformVar.set(platform)
+        self.yearVar.set(year)
+
+
+    def action(self):
+        '''Updates game info in db, for Update button press'''
+        # Prepare values
+        dev = self.devVar.get()
+        platform = self.platformVar.get()
+        year = self.yearVar.get()
+
+        if dev == '':
+            dev = None
+
+        if platform == '':
+            platform = None
+
+        try:
+            year = int(year)
+        except:
+            year = None
+
+        # Update db
+        self.data.update_game_info(self.selected['text'], [dev,platform,year])
+
+        self.top.destroy()
+
+
+
 class RemoveGame:
     def open(self, manage, data):
         '''Opens the Remove Game window'''
-        # References to manage window and data object
         self.manage = manage
         self.data = data
         self.selected = manage.get_selection()
@@ -382,7 +483,6 @@ class RemoveGame:
         self.top = tk.Toplevel(self.manage.top)
         self.top.title("Remove Game")
         self.top.resizable(False,False)
-        self.top.wm_attributes("-topmost", True)
 
         self.text = tk.Label(self.top, text="Remove game: {}?".format(self.selected['text']))
         self.remove = tk.Button(self.top, text="Remove", width=8, command=self.confirm)
@@ -392,6 +492,7 @@ class RemoveGame:
         self.top.bind('<Escape>', lambda x=0:self.cancel.invoke())
 
         self.position()
+        self.top.grab_set()
 
 
     def position(self):
@@ -429,6 +530,7 @@ class ManageGames:
     def __init__(self):
         '''Top-level window for game management'''
         self.add = AddGame()
+        self.edit = EditGame()
         self.remove = RemoveGame()
 
 
@@ -436,7 +538,7 @@ class ManageGames:
         '''Opens data management window'''
         self.top = tk.Toplevel(root)
         self.top.title("Manage Games")
-        self.top.wm_attributes("-topmost", True)
+        self.top.minsize(450,250)
 
         # Use these later, remove pointless args
         self.root = root
@@ -449,7 +551,7 @@ class ManageGames:
 
         self.sideFrame = tk.Frame(self.top, width=80)
         self.addButton = tk.Button(self.sideFrame, text="Add", command=lambda m=self, d=data: self.add.open(m,d))
-        self.editButton = tk.Button(self.sideFrame, text="Edit", command=lambda d=data: self.open_update(d))
+        self.editButton = tk.Button(self.sideFrame, text="Edit", command=lambda m=self, d=data: self.edit.open(m,d))
         self.remButton = tk.Button(self.sideFrame, text="Remove", command=lambda m=self, d=data: self.remove.open(m,d))
         self.refresh = tk.Button(self.sideFrame, text="Refresh", command=lambda d=data: self.refresh_tree(d))
         self.exit = tk.Button(self.sideFrame, text="Exit", command=self.top.destroy)
@@ -459,7 +561,6 @@ class ManageGames:
 
         self.position()
         self.check_selection()
-        self.top.grab_set()
 
 
     def build_tree(self, root, data):
@@ -507,6 +608,7 @@ class ManageGames:
         self.sideFrame.pack(side=tk.RIGHT,fill=tk.Y)
         self.sideFrame.pack_propagate(0)
         self.addButton.pack(side=tk.TOP,fill=tk.X)
+        self.editButton.pack(side=tk.TOP,fill=tk.X)
         self.remButton.pack(side=tk.TOP,fill=tk.X)
         self.exit.pack(side=tk.BOTTOM,fill=tk.X)
         self.refresh.pack(side=tk.BOTTOM, fill=tk.X)
@@ -531,10 +633,3 @@ class ManageGames:
         item = self.tree.item(selected)
 
         return item
-
-
-    def open_update(self, data):
-        '''Opens window to update game info'''
-        selected=self.tree.selection()
-        for i in selected:
-            print(self.tree.item(i))

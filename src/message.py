@@ -17,6 +17,7 @@ class Success:
         self.top.bind('<Return>', lambda x=0:self.ok.invoke())
 
         self.position()
+        self.top.grab_set()
 
 
     def position(self):
@@ -40,17 +41,23 @@ class Failure:
         self.top.wm_attributes("-topmost", True)
 
         self.text = tk.Label(self.top, text=message)
-        self.ok = tk.Button(self.top, text="Ok", width=6, command=self.top.destroy)
+        self.ok = tk.Button(self.top, text="Ok", width=6, command=lambda m=root: self.close(m))
 
         self.top.bind('<Return>', lambda x=0:self.ok.invoke())
 
         self.position()
+        self.top.grab_set()
 
 
     def position(self):
         ''''Positions text and ok button'''
         self.text.pack(padx=12, pady=6)
         self.ok.pack(pady=6)
+
+
+    def close(self, root):
+        self.top.destroy()
+        root.grab_set()
 
 
 

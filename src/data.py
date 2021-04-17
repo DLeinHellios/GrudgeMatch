@@ -133,7 +133,7 @@ class Query:
         if isActive:
             active = ('1',)
         else:
-            active - ('%',)
+            active = ('%',)
 
         self.c.execute('''
             SELECT
@@ -157,7 +157,7 @@ class Query:
         if isActive:
             active = ('1',)
         else:
-            active - ('%',)
+            active = ('%',)
 
         self.c.execute('''
             SELECT
@@ -173,6 +173,18 @@ class Query:
             GROUP BY Games.Id;''', active)
 
         return self.c.fetchall()
+
+
+    def game_info(self, gameName):
+        '''Returns game developer, platform and release year for game specified by name'''
+        self.c.execute('''
+            SELECT Games.Developer, Games.Platform, Games.ReleaseYear
+
+            FROM Games
+
+            WHERE Games.Name = ?''', (gameName,))
+
+        return self.c.fetchall()[0]
 
 
     def match_folders(self):
@@ -262,10 +274,10 @@ class Data:
             sys.exit()
 
 
-    def new_game(self, name):
+    def new_game(self, name, developer, platform, release):
         '''Creates a new game record with the provided name'''
         try:
-            self.c.execute('INSERT INTO "Games" ("Name") VALUES (?)', (name,))
+            self.c.execute('INSERT INTO "Games" ("Name","Developer","Platform","ReleaseYear") VALUES (?,?,?,?)', (name, developer, platform, release))
             self.db.commit()
         except:
             print("Unable to add game! Exiting...")
@@ -312,6 +324,18 @@ class Data:
             sys.exit()
 
 
+    def update_game_info(self, name, values):
+        '''Updates single game info for specified name'''
+        self.c.execute('''
+            UPDATE Games
+
+            SET Developer = ?, Platform = ?, ReleaseYear = ?
+
+            WHERE Name = ?''', tuple(values + [name]))
+
+        self.db.commit()
+
+
     def validate_player_name(self, name):
         '''Returns 0 for valid names, 1+ for error codes'''
         reserved = ['0','1','2','3','4','5','6','7','8','9','default','player','name','game','data']
@@ -354,12 +378,12 @@ class Data:
             err = 3
 
         elif len(name) > 30: # Name is too long
-            err = 40
+            err =5
 
         elif not err:
             for i in illegal:
                 if i in name: # Name uses an illegal character
-                    err = 5
+                    err = 4
 
         return err
 

@@ -157,7 +157,7 @@ class MatchAddEntry:
         # Create new for missing
         for entry in missing:
             if entry[0] == 'game':
-                data.new_game(entry[1])
+                data.new_game(entry[1],"","","")
             elif entry[0] == 'player':
                 data.new_player(entry[1])
 
